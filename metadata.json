@@ -1,0 +1,8 @@
+{
+  "name": "Broll — Offline Birthday Reminder",
+  "description": "Eco-friendly, minimalistic offline birthday reminder with local notifications and zero tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

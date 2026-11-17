@@ -1,0 +1,82 @@
+import React, {useState} from 'react';
+import {Download, X} from 'lucide-react';
+import {usePWAInstall} from '../hooks/usePWAInstall';
+
+export const PWAInstallButton: React.FC = () => {
+  const {isInstallable, isInstalled, isIOS, install} = usePWAInstall();
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
+
+  if (isInstalled) {
+    return null;
+  }
+
+  if (isInstallable) {
+    return (
+      <button
+        type="button"
+        onClick={install}
+        className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.05] text-xs font-medium text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/[0.1] transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8]"
+      >
+        <Download className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+        Install Offline App
+      </button>
+    );
+  }
+
+  if (isIOS) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setShowIOSGuide(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.05] text-xs font-medium text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/[0.1] transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8]"
+        >
+          <Download className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+          Install on iOS
+        </button>
+
+        {showIOSGuide && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ios-install-title"
+          >
+            <div className="w-full max-w-sm rounded-2xl border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-[#212A37] p-6 shadow-2xl">
+              <div className="flex items-start justify-between gap-4">
+                <h3
+                  id="ios-install-title"
+                  className="font-display text-lg font-semibold text-slate-900 dark:text-white"
+                >
+                  Install on iPhone or iPad
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowIOSGuide(false)}
+                  aria-label="Close installation guide"
+                  className="p-2 -mr-2 -mt-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.08] min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <ol className="mt-4 space-y-2.5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                <li>1. Tap the Share icon in the Safari toolbar.</li>
+                <li>2. Scroll down and select Add to Home Screen.</li>
+                <li>3. Open Linden from your home screen for full offline use.</li>
+              </ol>
+              <button
+                type="button"
+                onClick={() => setShowIOSGuide(false)}
+                className="mt-6 w-full py-2.5 px-4 rounded-xl bg-[#1D8FE1] text-white text-sm font-medium hover:bg-[#197CC6] transition-colors cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return null;
+};
