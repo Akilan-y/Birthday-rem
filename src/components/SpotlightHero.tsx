@@ -1,11 +1,12 @@
 import React from 'react';
-import {Award, Check, Leaf} from 'lucide-react';
+import {Award, Check, Clock, Leaf} from 'lucide-react';
 import type {ComputedBirthday} from '../types/birthday';
 import {
   formatCountdownLabel,
   formatOrdinalAge,
   formatShortDate,
   formatTodayHeader,
+  getCountdownCycleStats,
   isMilestoneAge,
 } from '../utils/dateMath';
 
@@ -23,9 +24,13 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
   onOpenAddModal,
 }) => {
   const nextBirthday = birthdays[0] ?? null;
-  const isNextMilestone = nextBirthday ? isMilestoneAge(nextBirthday.turningAge) : false;
+  const isNextRemembrance = nextBirthday?.group === 'Remembrance';
+  const isNextMilestone =
+    nextBirthday && !isNextRemembrance ? isMilestoneAge(nextBirthday.turningAge) : false;
 
-  const upcomingMilestones = birthdays.filter((b) => isMilestoneAge(b.turningAge));
+  const upcomingMilestones = birthdays.filter(
+    (b) => b.group !== 'Remembrance' && isMilestoneAge(b.turningAge)
+  );
   const nextSecondaryMilestone =
     upcomingMilestones.find((b) => b.id !== nextBirthday?.id) ?? null;
 
@@ -34,6 +39,20 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
   const next30DaysCount = birthdays.filter((b) => b.daysUntil <= 30).length;
   const formattedSize =
     vaultBytes < 1024 ? `${vaultBytes} B` : `${(vaultBytes / 1024).toFixed(1)} KB`;
+
+  const cycleStats = nextBirthday ? getCountdownCycleStats(nextBirthday) : null;
+  const visualBarScale = cycleStats
+    ? nextBirthday?.isToday
+      ? 1
+      : Math.max(0.02, cycleStats.progressRatio)
+    : 0;
+  const barGradientClass = nextBirthday?.isToday
+    ? 'from-[#1D8FE1] to-emerald-400'
+    : isNextRemembrance
+    ? 'from-violet-500/80 to-[#A78BFA]'
+    : nextBirthday && nextBirthday.daysUntil <= 7
+    ? 'from-[#1D8FE1] to-amber-400'
+    : 'from-[#1D8FE1]/85 to-[#38BDF8]';
 
   return (
     <section className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-6">
@@ -61,9 +80,13 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
             <div className="mt-3">
               <h2 className="font-display text-2xl sm:text-3xl font-medium tracking-tight text-slate-900 dark:text-white [text-wrap:balance]">
                 {nextBirthday.isToday
-                  ? isNextMilestone && nextBirthday.turningAge !== null
+                  ? isNextRemembrance
+                    ? `Remembering ${nextBirthday.name} today.`
+                    : isNextMilestone && nextBirthday.turningAge !== null
                     ? `${nextBirthday.name} turns ${nextBirthday.turningAge} today.`
                     : `${nextBirthday.name}'s birthday is today.`
+                  : isNextRemembrance
+                  ? `${nextBirthday.name} is remembered ${formatCountdownLabel(nextBirthday.daysUntil).toLowerCase()}.`
                   : isNextMilestone && nextBirthday.turningAge !== null
                   ? `${nextBirthday.name}'s ${formatOrdinalAge(nextBirthday.turningAge)} milestone is ${formatCountdownLabel(nextBirthday.daysUntil).toLowerCase()}.`
                   : `${nextBirthday.name} is next, ${formatCountdownLabel(nextBirthday.daysUntil).toLowerCase()}.`}
@@ -80,7 +103,9 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
                           : ''
                       }`}
                     >
-                      Turning {nextBirthday.turningAge}
+                      {isNextRemembrance
+                        ? `${nextBirthday.turningAge} yrs in memory`
+                        : `Turning ${nextBirthday.turningAge}`}
                       {isNextMilestone ? ' (Milestone)' : ''}
                     </span>
                   </>
@@ -119,7 +144,13 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
               }`}
             >
               <Check className="w-4 h-4" />
-              {nextBirthday.isCelebratedThisYear ? 'Wish Recorded' : 'Mark Wish Sent'}
+              {isNextRemembrance
+                ? nextBirthday.isCelebratedThisYear
+                  ? 'Remembered'
+                  : 'Mark Remembered'
+                : nextBirthday.isCelebratedThisYear
+                ? 'Wish Recorded'
+                : 'Mark Wish Sent'}
             </button>
           </div>
         ) : (
@@ -134,6 +165,101 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
           </div>
         )}
       </div>
+
+      {/* Countdown Visualizer */}
+      {nextBirthday && cycleStats && (
+        <div className="mt-5 pt-4 border-t border-slate-200 dark:border-white/[0.06]">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="inline-flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-200">
+              <Clock
+                className={`w-3.5 h-3.5 ${
+                  isNextRemembrance
+                    ? 'text-violet-500 dark:text-violet-300'
+                    : nextBirthday.isToday
+                    ? 'text-emerald-500 dark:text-emerald-300'
+                    : nextBirthday.daysUntil <= 7
+                    ? 'text-amber-500 dark:text-amber-300'
+                    : 'text-[#1D8FE1] dark:text-[#38BDF8]'
+                }`}
+              />
+              <span>
+                {nextBirthday.isToday
+                  ? isNextRemembrance
+                    ? 'Remembrance Day Arrived'
+                    : 'Celebration Day'
+                  : 'Countdown Progress'}
+              </span>
+            </span>
+
+            <span className="font-mono tabular-nums text-slate-600 dark:text-slate-300">
+              {nextBirthday.isToday ? (
+                <span className="font-semibold text-emerald-600 dark:text-emerald-300">
+                  0 days left · 100%
+                </span>
+              ) : (
+                <>
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {cycleStats.remainingDays}{' '}
+                    {cycleStats.remainingDays === 1 ? 'day' : 'days'} left
+                  </span>
+                  <span aria-hidden="true" className="mx-1.5 text-slate-400">
+                    ·
+                  </span>
+                  <span className="text-slate-500 dark:text-slate-400">
+                    {cycleStats.elapsedDays}/{cycleStats.totalDays}d ({cycleStats.percentComplete}%)
+                  </span>
+                </>
+              )}
+            </span>
+          </div>
+
+          <div
+            role="progressbar"
+            aria-label={`Annual countdown for ${nextBirthday.name}`}
+            aria-valuemin={0}
+            aria-valuemax={cycleStats.totalDays}
+            aria-valuenow={cycleStats.elapsedDays}
+            aria-valuetext={
+              nextBirthday.isToday
+                ? 'Today'
+                : `${cycleStats.remainingDays} days remaining, ${cycleStats.percentComplete} percent of year elapsed`
+            }
+            className="mt-2.5 relative h-2.5 w-full rounded-full bg-slate-200/80 dark:bg-white/[0.08] overflow-hidden"
+          >
+            <div
+              className={`h-full w-full origin-left rounded-full bg-gradient-to-r ${barGradientClass} transition-transform duration-300 ease-out motion-reduce:transition-none`}
+              style={{transform: `scaleX(${visualBarScale})`}}
+            />
+            <span
+              aria-hidden="true"
+              className="absolute inset-y-0 left-1/4 w-px bg-white/40 dark:bg-white/10 pointer-events-none"
+            />
+            <span
+              aria-hidden="true"
+              className="absolute inset-y-0 left-1/2 w-px bg-white/40 dark:bg-white/10 pointer-events-none"
+            />
+            <span
+              aria-hidden="true"
+              className="absolute inset-y-0 left-3/4 w-px bg-white/40 dark:bg-white/10 pointer-events-none"
+            />
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono tabular-nums text-slate-500 dark:text-slate-400">
+            <span>
+              {formatShortDate(nextBirthday.month, nextBirthday.day)}, {cycleStats.previousYear}
+            </span>
+            <span className="font-sans text-slate-500 dark:text-slate-400">
+              {nextBirthday.advanceDays === 0
+                ? 'Reminder on the day'
+                : `Reminder ${nextBirthday.advanceDays}d prior`}
+            </span>
+            <span>
+              {formatShortDate(nextBirthday.month, nextBirthday.day)},{' '}
+              {nextBirthday.nextOccurrenceYear}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Upcoming Milestone Radar Strip */}
       {nextSecondaryMilestone && nextSecondaryMilestone.turningAge !== null && (

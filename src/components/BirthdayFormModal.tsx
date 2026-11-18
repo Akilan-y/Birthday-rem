@@ -26,7 +26,7 @@ interface BirthdayFormModalProps {
   }) => void;
 }
 
-const GROUPS: RelationshipGroup[] = ['Family', 'Friends', 'Colleagues', 'Community'];
+const GROUPS: RelationshipGroup[] = ['Family', 'Friends', 'Remembrance'];
 const ADVANCE_STEPS: AdvanceNoticeDays[] = [0, 1, 3, 7];
 
 export const BirthdayFormModal: React.FC<BirthdayFormModalProps> = ({
@@ -136,7 +136,13 @@ export const BirthdayFormModal: React.FC<BirthdayFormModalProps> = ({
             id="birthday-modal-title"
             className="text-base font-semibold text-slate-900 dark:text-white"
           >
-            {editingEntry ? 'Edit Birthday' : 'New Birthday Entry'}
+            {editingEntry
+              ? group === 'Remembrance'
+                ? 'Edit Remembrance'
+                : 'Edit Birthday'
+              : group === 'Remembrance'
+              ? 'New Remembrance Entry'
+              : 'New Birthday Entry'}
           </h2>
           <button
             type="button"
@@ -166,7 +172,7 @@ export const BirthdayFormModal: React.FC<BirthdayFormModalProps> = ({
                 maxLength={80}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Maya Lin"
+                placeholder="e.g., Alex Rivera"
                 className="w-full min-h-[40px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]"
               />
             </div>
@@ -264,6 +270,11 @@ export const BirthdayFormModal: React.FC<BirthdayFormModalProps> = ({
                   </option>
                 ))}
               </select>
+              {group === 'Remembrance' && (
+                <p className="mt-1.5 text-[11px] text-violet-600 dark:text-violet-300">
+                  For honoring and remembering loved ones who have passed.
+                </p>
+              )}
             </div>
           </div>
 
@@ -314,7 +325,11 @@ export const BirthdayFormModal: React.FC<BirthdayFormModalProps> = ({
                 maxLength={280}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Add gift idea or eco note..."
+                placeholder={
+                  group === 'Remembrance'
+                    ? 'Add remembrance note or memorial tribute...'
+                    : 'Add gift idea or eco note...'
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]"
               />
             </div>

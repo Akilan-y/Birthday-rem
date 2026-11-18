@@ -35,8 +35,7 @@ interface GroupDatum {
 const RELATIONSHIP_GROUPS: RelationshipGroup[] = [
   'Family',
   'Friends',
-  'Colleagues',
-  'Community',
+  'Remembrance',
 ];
 
 export const StatisticsSection: React.FC<StatisticsSectionProps> = ({
@@ -66,11 +65,14 @@ export const StatisticsSection: React.FC<StatisticsSectionProps> = ({
     const counts: Record<RelationshipGroup, number> = {
       Family: 0,
       Friends: 0,
-      Colleagues: 0,
-      Community: 0,
+      Remembrance: 0,
     };
     for (const b of birthdays) {
-      counts[b.group] += 1;
+      if (b.group in counts) {
+        counts[b.group] += 1;
+      } else {
+        counts.Friends += 1;
+      }
     }
     const total = birthdays.length;
     return RELATIONSHIP_GROUPS.map((group) => ({
@@ -93,8 +95,7 @@ export const StatisticsSection: React.FC<StatisticsSectionProps> = ({
   const groupColors: Record<RelationshipGroup, string> = {
     Family: '#34D399',
     Friends: '#1D8FE1',
-    Colleagues: '#FBBF24',
-    Community: '#38BDF8',
+    Remembrance: '#A78BFA',
   };
 
   return (
@@ -225,7 +226,7 @@ export const StatisticsSection: React.FC<StatisticsSectionProps> = ({
                       dataKey="group"
                       axisLine={false}
                       tickLine={false}
-                      width={74}
+                      width={92}
                       tick={{fill: axisTextColor, fontSize: 12}}
                     />
                     <Tooltip

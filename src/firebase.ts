@@ -10,16 +10,46 @@ import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const WORKSPACE_SCOPES = [
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/spreadsheets.readonly',
+] as const;
+
+const databaseId =
+  (firebaseConfig as {firestoreDatabaseId?: string}).firestoreDatabaseId ||
+  'ai-studio-brollofflinebirt-ec36f2bc-ca89-4400-8a45-253876c44181';
+
+export const db = getFirestore(app, databaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+WORKSPACE_SCOPES.forEach((scope) => {
+  googleProvider.addScope(scope);
+});
 googleProvider.setCustomParameters({prompt: 'select_account'});
 
-export async function signInWithGoogle(): Promise<void> {
-  await signInWithPopup(auth, googleProvider);
+// In-memory only: never persist OAuth access tokens to localStorage or sessionStorage.
+let cachedAccessToken: string | null = null;
+
+export function getCachedAccessToken(): string | null {
+  return cachedAccessToken;
+}
+
+export function clearCachedAccessToken(): void {
+  cachedAccessToken = null;
+}
+
+export async function signInWithGoogle(): Promise<string | null> {
+  const result = await signInWithPopup(auth, googleProvider);
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  cachedAccessToken = credential?.accessToken ?? null;
+  return cachedAccessToken;
 }
 
 export async function signOutUser(): Promise<void> {
+  cachedAccessToken = null;
   await signOut(auth);
 }
 

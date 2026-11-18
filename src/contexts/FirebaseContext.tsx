@@ -1,6 +1,12 @@
-import React, {createContext, useContext, useEffect, useState} from 'react';
+import React, {createContext, useCallback, useContext, useEffect, useState} from 'react';
 import {onAuthStateChanged, type User} from 'firebase/auth';
-import {auth, signInWithGoogle, signOutUser} from '../firebase';
+import {
+  auth,
+  clearCachedAccessToken,
+  getCachedAccessToken,
+  signInWithGoogle,
+  signOutUser,
+} from '../firebase';
 import {ensureUserProfile} from '../utils/firestoreVault';
 
 interface FirebaseContextValue {
@@ -8,8 +14,10 @@ interface FirebaseContextValue {
   authReady: boolean;
   profileReady: boolean;
   authError: string | null;
+  workspaceToken: string | null;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
+  invalidateWorkspaceToken: () => void;
 }
 
 const FirebaseContext = createContext<FirebaseContextValue | null>(null);
@@ -19,6 +27,9 @@ export const FirebaseProvider: React.FC<{children: React.ReactNode}> = ({childre
   const [authReady, setAuthReady] = useState(false);
   const [profileReady, setProfileReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [workspaceToken, setWorkspaceToken] = useState<string | null>(() =>
+    getCachedAccessToken()
+  );
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (nextUser) => {
@@ -26,6 +37,8 @@ export const FirebaseProvider: React.FC<{children: React.ReactNode}> = ({childre
       setAuthReady(true);
 
       if (!nextUser) {
+        clearCachedAccessToken();
+        setWorkspaceToken(null);
         setProfileReady(false);
         return;
       }
@@ -45,22 +58,30 @@ export const FirebaseProvider: React.FC<{children: React.ReactNode}> = ({childre
     return () => unsubscribe();
   }, []);
 
-  const handleSignIn = async () => {
+  const handleSignIn = useCallback(async () => {
     setAuthError(null);
     try {
-      await signInWithGoogle();
+      const token = await signInWithGoogle();
+      setWorkspaceToken(token);
     } catch (err) {
       setAuthError(
         err instanceof Error ? err.message : 'Google sign-in was cancelled or failed.'
       );
     }
-  };
+  }, []);
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     setAuthError(null);
     setProfileReady(false);
+    clearCachedAccessToken();
+    setWorkspaceToken(null);
     await signOutUser();
-  };
+  }, []);
+
+  const invalidateWorkspaceToken = useCallback(() => {
+    clearCachedAccessToken();
+    setWorkspaceToken(null);
+  }, []);
 
   return (
     <FirebaseContext.Provider
@@ -69,8 +90,10 @@ export const FirebaseProvider: React.FC<{children: React.ReactNode}> = ({childre
         authReady,
         profileReady,
         authError,
+        workspaceToken,
         signIn: handleSignIn,
         signOut: handleSignOut,
+        invalidateWorkspaceToken,
       }}
     >
       {children}

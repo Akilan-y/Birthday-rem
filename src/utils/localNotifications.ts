@@ -105,11 +105,20 @@ export async function evaluateAndSendDueReminders(
 
     const dateLabel = formatShortDate(entry.month, entry.day);
     const whenLabel = formatCountdownLabel(entry.daysUntil);
-    const ageLabel = entry.turningAge !== null ? ` (Turning ${entry.turningAge})` : '';
-    const title =
-      entry.daysUntil === 0
-        ? `Birthday Today: ${entry.name}`
-        : `Upcoming Birthday: ${entry.name}`;
+    const isRemembrance = entry.group === 'Remembrance';
+    const ageLabel =
+      entry.turningAge !== null
+        ? isRemembrance
+          ? ` (${entry.turningAge} yrs)`
+          : ` (Turning ${entry.turningAge})`
+        : '';
+    const title = isRemembrance
+      ? entry.daysUntil === 0
+        ? `Remembrance Day: ${entry.name}`
+        : `Upcoming Remembrance: ${entry.name}`
+      : entry.daysUntil === 0
+      ? `Birthday Today: ${entry.name}`
+      : `Upcoming Birthday: ${entry.name}`;
     const body = `${whenLabel} · ${dateLabel}${ageLabel}${entry.note ? ` — ${entry.note}` : ''}`;
 
     const sent = await dispatchLocalNotification(title, body, triggerKey);

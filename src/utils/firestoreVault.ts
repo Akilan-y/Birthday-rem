@@ -28,8 +28,7 @@ import type {
 const VALID_GROUPS = new Set<RelationshipGroup>([
   'Family',
   'Friends',
-  'Colleagues',
-  'Community',
+  'Remembrance',
 ]);
 const VALID_ADVANCE = new Set<AdvanceNoticeDays>([0, 1, 3, 7]);
 const VALID_PERSONAS = new Set<AssistantPersona>([
@@ -292,12 +291,14 @@ export async function bulkDeleteBirthdaysInFirestore(
   if (ids.length === 0) return;
   const path = `users/${uid}/birthdays`;
   try {
-    const batch = writeBatch(db);
-    for (const rawId of ids) {
-      const id = sanitizeId(rawId);
-      batch.delete(doc(db, 'users', uid, 'birthdays', id));
+    for (let i = 0; i < ids.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const rawId of ids.slice(i, i + 400)) {
+        const id = sanitizeId(rawId);
+        batch.delete(doc(db, 'users', uid, 'birthdays', id));
+      }
+      await batch.commit();
     }
-    await batch.commit();
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
@@ -312,15 +313,17 @@ export async function bulkReassignBirthdaysInFirestore(
   const safeGroup: RelationshipGroup = VALID_GROUPS.has(group) ? group : 'Friends';
   const path = `users/${uid}/birthdays`;
   try {
-    const batch = writeBatch(db);
-    for (const rawId of ids) {
-      const id = sanitizeId(rawId);
-      batch.update(doc(db, 'users', uid, 'birthdays', id), {
-        group: safeGroup,
-        updatedAt: serverTimestamp(),
-      });
+    for (let i = 0; i < ids.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const rawId of ids.slice(i, i + 400)) {
+        const id = sanitizeId(rawId);
+        batch.update(doc(db, 'users', uid, 'birthdays', id), {
+          group: safeGroup,
+          updatedAt: serverTimestamp(),
+        });
+      }
+      await batch.commit();
     }
-    await batch.commit();
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
@@ -333,17 +336,19 @@ export async function syncBirthdaysBatchToFirestore(
   if (entries.length === 0) return;
   const path = `users/${uid}/birthdays`;
   try {
-    const batch = writeBatch(db);
-    for (const entry of entries) {
-      const payload = sanitizeBirthdayPayload(uid, entry);
-      const ref = doc(db, 'users', uid, 'birthdays', payload.id);
-      batch.set(ref, {
-        ...payload,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+    for (let i = 0; i < entries.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const entry of entries.slice(i, i + 400)) {
+        const payload = sanitizeBirthdayPayload(uid, entry);
+        const ref = doc(db, 'users', uid, 'birthdays', payload.id);
+        batch.set(ref, {
+          ...payload,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+      await batch.commit();
     }
-    await batch.commit();
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }

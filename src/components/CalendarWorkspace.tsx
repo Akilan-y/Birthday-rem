@@ -37,16 +37,13 @@ const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 
 function getGroupBarColor(group: RelationshipGroup, isToday: boolean, isMilestone: boolean): string {
   if (isToday) return '#F97316'; // Warm coral
+  if (group === 'Remembrance') return '#A78BFA'; // Calm lavender-violet for Remembrance
   if (isMilestone) return '#A3E635'; // Luminous lime-moss
   switch (group) {
     case 'Family':
       return '#34D399';
     case 'Friends':
       return '#1D8FE1';
-    case 'Colleagues':
-      return '#FBBF24';
-    case 'Community':
-      return '#38BDF8';
   }
 }
 
@@ -198,7 +195,8 @@ export const CalendarWorkspace: React.FC<CalendarWorkspaceProps> = ({
   const selectedDateLabel = `${selectedCell.day} ${MONTH_NAMES[selectedCell.month]}, ${selectedCell.year}`;
 
   const renderScheduledCard = (entry: ComputedBirthday, highlightSelected: boolean) => {
-    const isMilestone = isMilestoneAge(entry.turningAge);
+    const isRemembrance = entry.group === 'Remembrance';
+    const isMilestone = !isRemembrance && isMilestoneAge(entry.turningAge);
 
     return (
       <div
@@ -215,7 +213,7 @@ export const CalendarWorkspace: React.FC<CalendarWorkspaceProps> = ({
               {entry.name}
             </h4>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
-              {entry.note || `${entry.group} circle`}
+              {entry.note || (isRemembrance ? 'In loving memory' : `${entry.group} circle`)}
             </p>
           </div>
           {isMilestone && entry.turningAge !== null && (
@@ -233,7 +231,8 @@ export const CalendarWorkspace: React.FC<CalendarWorkspaceProps> = ({
           <span className="inline-flex items-center gap-1.5 tabular-nums">
             <Clock className="w-3.5 h-3.5" />
             {formatShortDate(entry.month, entry.day)}
-            {entry.turningAge !== null && ` · Age ${entry.turningAge}`}
+            {entry.turningAge !== null &&
+              (isRemembrance ? ` · ${entry.turningAge} yrs` : ` · Age ${entry.turningAge}`)}
           </span>
           <span className="font-mono tabular-nums text-slate-700 dark:text-slate-200">
             {formatCountdownLabel(entry.daysUntil)}
@@ -241,7 +240,13 @@ export const CalendarWorkspace: React.FC<CalendarWorkspaceProps> = ({
         </div>
 
         <div className="mt-3 pt-2.5 border-t border-slate-200/70 dark:border-white/[0.06] flex items-center justify-between gap-2">
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+          <span
+            className={`text-[11px] ${
+              isRemembrance
+                ? 'text-violet-600 dark:text-violet-300 font-medium'
+                : 'text-slate-500 dark:text-slate-400'
+            }`}
+          >
             {entry.group}
           </span>
           <div className="flex items-center gap-1">
@@ -255,7 +260,13 @@ export const CalendarWorkspace: React.FC<CalendarWorkspaceProps> = ({
               }`}
             >
               <Check className="w-3 h-3" />
-              {entry.isCelebratedThisYear ? 'Wished' : 'Wish'}
+              {isRemembrance
+                ? entry.isCelebratedThisYear
+                  ? 'Remembered'
+                  : 'Remember'
+                : entry.isCelebratedThisYear
+                ? 'Wished'
+                : 'Wish'}
             </button>
             <button
               type="button"

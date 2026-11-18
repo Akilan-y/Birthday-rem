@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Bell,
   Calendar,
+  FileSpreadsheet,
   LayoutGrid,
   Leaf,
   MessageSquare,
@@ -30,6 +31,7 @@ const RAIL_ITEMS: {
   {id: 'calendar', label: 'Calendar Agenda', Icon: Calendar},
   {id: 'statistics', label: 'Statistics', Icon: PieChart},
   {id: 'assistant', label: 'Celebration Assistant', Icon: MessageSquare},
+  {id: 'sheets', label: 'Google Sheets Sync', Icon: FileSpreadsheet},
   {id: 'reminders', label: 'Local Reminders', Icon: Bell},
   {id: 'vault', label: 'Privacy & Sync Vault', Icon: ShieldCheck},
 ];

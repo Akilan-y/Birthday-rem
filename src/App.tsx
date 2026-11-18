@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   AlertCircle,
+  ArrowLeftRight,
   Bell,
   Cloud,
   Leaf,
@@ -20,6 +21,7 @@ import {
 import {BirthdayFormModal} from './components/BirthdayFormModal';
 import {CalendarWorkspace} from './components/CalendarWorkspace';
 import {ChatbotPanel} from './components/ChatbotPanel';
+import {GoogleSheetsPanel} from './components/GoogleSheetsPanel';
 import {MobileBottomNav} from './components/MobileBottomNav';
 import {MonthCalendarGrid} from './components/MonthCalendarGrid';
 import {PrivacyVaultPanel} from './components/PrivacyVaultPanel';
@@ -30,6 +32,7 @@ import {StatisticsSection} from './components/StatisticsSection';
 import {UpcomingList} from './components/UpcomingList';
 import {useFirebase} from './contexts/FirebaseContext';
 import {useOnlineStatus} from './hooks/useOnlineStatus';
+import {useSheetsParallelSync} from './hooks/useSheetsParallelSync';
 import type {
   AdvanceNoticeDays,
   BirthdayEntry,
@@ -42,6 +45,11 @@ import type {
   WorkspaceView,
 } from './types/birthday';
 import {computeBirthday} from './utils/dateMath';
+import {
+  canonicalEntrySignature,
+  loadAttachedEventsSheet,
+  normalizeNameKey,
+} from './utils/googleSheets';
 import {
   bulkDeleteBirthdaysInFirestore,
   bulkReassignBirthdaysInFirestore,
@@ -60,6 +68,7 @@ import {evaluateAndSendDueReminders} from './utils/localNotifications';
 import {
   calculateVaultBytes,
   DEFAULT_NOTIFICATION_SETTINGS,
+  isSampleBirthdayId,
   loadChatMessagesFromVault,
   loadVaultData,
   saveBirthdaysToVault,
@@ -77,7 +86,16 @@ function getGreeting(): string {
 
 export default function App() {
   const isOnline = useOnlineStatus();
-  const {user, authReady, profileReady, authError, signIn, signOut} = useFirebase();
+  const {
+    user,
+    authReady,
+    profileReady,
+    authError,
+    workspaceToken,
+    invalidateWorkspaceToken,
+    signIn,
+    signOut,
+  } = useFirebase();
   const isCloudSynced = Boolean(user && profileReady);
 
   const [isLoaded, setIsLoaded] = useState(false);
@@ -109,12 +127,74 @@ export default function App() {
   birthdaysRef.current = birthdays;
   const mergedUidRef = useRef<string | null>(null);
 
+  const handleApplySheetEntries = useCallback(
+    async (nextEntries: BirthdayEntry[]) => {
+      const prevEntries = birthdaysRef.current;
+      const prevMap = new Map(prevEntries.map((item) => [item.id, item]));
+      const nextIdSet = new Set(nextEntries.map((item) => item.id));
+
+      const removedIds = prevEntries
+        .filter((item) => !nextIdSet.has(item.id))
+        .map((item) => item.id);
+      const upserted = nextEntries.filter((item) => {
+        const prev = prevMap.get(item.id);
+        return !prev || canonicalEntrySignature(prev) !== canonicalEntrySignature(item);
+      });
+
+      setBirthdays(nextEntries);
+      await saveBirthdaysToVault(nextEntries);
+
+      if (user && profileReady) {
+        try {
+          if (removedIds.length > 0) {
+            await bulkDeleteBirthdaysInFirestore(user.uid, removedIds);
+          }
+          if (upserted.length > 0) {
+            await syncBirthdaysBatchToFirestore(user.uid, upserted);
+          }
+        } catch (err) {
+          setFirestoreError(
+            err instanceof Error ? err.message : 'Unable to sync sheet changes to cloud.'
+          );
+        }
+      }
+    },
+    [user, profileReady]
+  );
+
+  const sheetsSync = useSheetsParallelSync({
+    isLoaded,
+    birthdays,
+    workspaceToken,
+    onApplySheetEntries: handleApplySheetEntries,
+    onAuthExpired: invalidateWorkspaceToken,
+  });
+
   useEffect(() => {
     let active = true;
     Promise.all([loadVaultData(), loadChatMessagesFromVault()]).then(
-      ([data, localChats]) => {
+      async ([data, localChats]) => {
         if (!active) return;
-        setBirthdays(data.birthdays);
+
+        let initialBirthdays = data.birthdays;
+        const userClearedAll = localStorage.getItem('broll_user_cleared_all') === 'true';
+
+        if (initialBirthdays.length === 0 && !userClearedAll) {
+          try {
+            const attached = await loadAttachedEventsSheet();
+            if (!active) return;
+            if (attached.entries.length > 0) {
+              initialBirthdays = attached.entries;
+              await saveBirthdaysToVault(attached.entries);
+              sheetsSync.updateIncompleteRows(attached.incompleteRows);
+            }
+          } catch {
+            // Keep empty vault if attached CSV is unavailable
+          }
+        }
+
+        if (!active) return;
+        setBirthdays(initialBirthdays);
         setSettings(data.settings);
         setLogs(data.logs);
         setChatMessages(localChats);
@@ -124,6 +204,7 @@ export default function App() {
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Real-time Firestore subscriptions once authenticated & profile verified
@@ -152,35 +233,51 @@ export default function App() {
     const unsubBirthdays = subscribeToBirthdaysInFirestore(
       uid,
       (remoteEntries) => {
+        const sampleIds = remoteEntries
+          .filter((item) => isSampleBirthdayId(item.id))
+          .map((item) => item.id);
+        const cleanedRemote = remoteEntries.filter((item) => !isSampleBirthdayId(item.id));
+
+        if (sampleIds.length > 0) {
+          void bulkDeleteBirthdaysInFirestore(uid, sampleIds).catch((err) => {
+            setFirestoreError(
+              err instanceof Error ? err.message : 'Unable to remove sample birthdays from cloud.'
+            );
+          });
+        }
+
         if (mergedUidRef.current !== uid) {
           mergedUidRef.current = uid;
           const seedFlagKey = `broll_cloud_seeded_${uid}`;
-          const alreadySeededCloud = localStorage.getItem(seedFlagKey) === 'true';
-          const remoteIds = new Set(remoteEntries.map((item) => item.id));
+          const remoteIds = new Set(cleanedRemote.map((item) => item.id));
+          const remoteNameDates = new Set(
+            cleanedRemote.map(
+              (item) => `${normalizeNameKey(item.name)}|${item.month}|${item.day}`
+            )
+          );
           const localAdditions = birthdaysRef.current.filter(
-            (item) => !item.id.startsWith('seed-') && !remoteIds.has(item.id)
+            (item) =>
+              !isSampleBirthdayId(item.id) &&
+              !remoteIds.has(item.id) &&
+              !remoteNameDates.has(
+                `${normalizeNameKey(item.name)}|${item.month}|${item.day}`
+              )
           );
 
-          if (remoteEntries.length === 0 && !alreadySeededCloud && birthdaysRef.current.length > 0) {
-            localStorage.setItem(seedFlagKey, 'true');
-            void syncBirthdaysBatchToFirestore(uid, birthdaysRef.current).catch((err) => {
-              setFirestoreError(err instanceof Error ? err.message : 'Unable to sync local birthdays.');
-            });
-            return;
-          }
-
+          localStorage.setItem(seedFlagKey, 'true');
           if (localAdditions.length > 0) {
-            localStorage.setItem(seedFlagKey, 'true');
+            const combined = [...cleanedRemote, ...localAdditions];
+            setBirthdays(combined);
+            void saveBirthdaysToVault(combined);
             void syncBirthdaysBatchToFirestore(uid, localAdditions).catch((err) => {
               setFirestoreError(err instanceof Error ? err.message : 'Unable to merge local birthdays.');
             });
-          } else {
-            localStorage.setItem(seedFlagKey, 'true');
+            return;
           }
         }
 
-        setBirthdays(remoteEntries);
-        void saveBirthdaysToVault(remoteEntries);
+        setBirthdays(cleanedRemote);
+        void saveBirthdaysToVault(cleanedRemote);
       },
       (err) => setFirestoreError(err.message)
     );
@@ -246,11 +343,6 @@ export default function App() {
   const vaultBytes = useMemo(
     () => calculateVaultBytes(birthdays, settings, logs),
     [birthdays, settings, logs]
-  );
-
-  const hasOnlySeeded = useMemo(
-    () => birthdays.length > 0 && birthdays.every((b) => b.id.startsWith('seed-')),
-    [birthdays]
   );
 
   useEffect(() => {
@@ -352,6 +444,7 @@ export default function App() {
       updated = [...birthdays, targetEntry];
     }
 
+    localStorage.removeItem('broll_user_cleared_all');
     setBirthdays(updated);
     await saveBirthdaysToVault(updated);
 
@@ -490,6 +583,9 @@ export default function App() {
       return true;
     });
     const merged = [...birthdays, ...additions];
+    if (merged.length > 0) {
+      localStorage.removeItem('broll_user_cleared_all');
+    }
     setBirthdays(merged);
     await saveBirthdaysToVault(merged);
 
@@ -522,6 +618,7 @@ export default function App() {
   const handleClearAllData = async () => {
     const prevBirthdayIds = birthdays.map((b) => b.id);
     const prevChatIds = chatMessages.map((m) => m.id);
+    localStorage.setItem('broll_user_cleared_all', 'true');
     setBirthdays([]);
     setLogs([]);
     setChatMessages([]);
@@ -538,21 +635,6 @@ export default function App() {
         await updateUserNotificationSettingsInFirestore(user.uid, DEFAULT_NOTIFICATION_SETTINGS);
       } catch (err) {
         setFirestoreError(err instanceof Error ? err.message : 'Unable to erase cloud records.');
-      }
-    }
-  };
-
-  const handleClearSeeded = async () => {
-    const seedIds = birthdays.filter((b) => b.id.startsWith('seed-')).map((b) => b.id);
-    const remaining = birthdays.filter((b) => !b.id.startsWith('seed-'));
-    setBirthdays(remaining);
-    await saveBirthdaysToVault(remaining);
-
-    if (user && profileReady && seedIds.length > 0) {
-      try {
-        await bulkDeleteBirthdaysInFirestore(user.uid, seedIds);
-      } catch (err) {
-        setFirestoreError(err instanceof Error ? err.message : 'Unable to remove sample birthdays.');
       }
     }
   };
@@ -661,6 +743,28 @@ export default function App() {
               >
                 <Bell className="w-4 h-4" />
               </button>
+
+              {sheetsSync.configuredTarget?.parallelSyncEnabled && (
+                <button
+                  type="button"
+                  onClick={() => setActiveView('sheets')}
+                  title={`Google Sheets Parallel Sync: ${sheetsSync.configuredTarget.spreadsheetTitle}`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-full border text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8] ${
+                    workspaceToken
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20'
+                      : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20'
+                  }`}
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                  <span className="hidden xl:inline">
+                    {workspaceToken
+                      ? sheetsSync.syncStatus === 'syncing'
+                        ? 'Syncing...'
+                        : 'Sheets Live'
+                      : 'Sheets Paused'}
+                  </span>
+                </button>
+              )}
 
               {authReady && (
                 user ? (
@@ -795,8 +899,6 @@ export default function App() {
                       onBulkReassignGroup={handleBulkReassignGroup}
                       onToggleCelebrated={handleToggleCelebrated}
                       onOpenAddModal={() => handleOpenAddModal()}
-                      onClearSeeded={handleClearSeeded}
-                      hasOnlySeeded={hasOnlySeeded}
                     />
                     <StatisticsSection
                       birthdays={computedBirthdays}
@@ -838,6 +940,24 @@ export default function App() {
                   />
                 )}
 
+                {activeView === 'sheets' && (
+                  <GoogleSheetsPanel
+                    birthdays={birthdays}
+                    onImportBirthdays={handleImportBirthdays}
+                    onReplaceBirthdays={handleApplySheetEntries}
+                    configuredTarget={sheetsSync.configuredTarget}
+                    onUpdateConfiguredTarget={sheetsSync.updateConfiguredTarget}
+                    incompleteRows={sheetsSync.incompleteRows}
+                    onUpdateIncompleteRows={sheetsSync.updateIncompleteRows}
+                    syncStatus={sheetsSync.syncStatus}
+                    syncError={sheetsSync.syncError}
+                    onEnableParallelSync={sheetsSync.enableParallelSync}
+                    onPauseParallelSync={sheetsSync.pauseParallelSync}
+                    onSyncNow={sheetsSync.syncNow}
+                    onRecordSnapshot={sheetsSync.recordSnapshot}
+                  />
+                )}
+
                 {activeView === 'reminders' && (
                   <RemindersPanel
                     settings={settings}
@@ -853,6 +973,7 @@ export default function App() {
                   <PrivacyVaultPanel
                     birthdays={birthdays}
                     settings={settings}
+                    logs={logs}
                     vaultBytes={vaultBytes}
                     isDarkMode={isDarkMode}
                     onToggleDarkMode={handleToggleDarkMode}
@@ -863,6 +984,7 @@ export default function App() {
                     isCloudSynced={isCloudSynced}
                     onSignIn={signIn}
                     onSignOut={signOut}
+                    onOpenGoogleSheets={() => setActiveView('sheets')}
                   />
                 )}
               </>

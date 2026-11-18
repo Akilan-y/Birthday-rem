@@ -5,6 +5,7 @@ import {
   formatCompactCountdown,
   formatCountdownLabel,
   formatShortDate,
+  getCountdownCycleStats,
 } from '../utils/dateMath';
 
 interface UpcomingListProps {
@@ -22,23 +23,19 @@ interface UpcomingListProps {
   onBulkReassignGroup: (ids: string[], group: RelationshipGroup) => Promise<void> | void;
   onToggleCelebrated: (entry: ComputedBirthday) => void;
   onOpenAddModal: () => void;
-  onClearSeeded?: () => void;
-  hasOnlySeeded?: boolean;
 }
 
 const FILTER_OPTIONS: ('All' | RelationshipGroup)[] = [
   'All',
   'Family',
   'Friends',
-  'Colleagues',
-  'Community',
+  'Remembrance',
 ];
 
 const RELATIONSHIP_GROUPS: RelationshipGroup[] = [
   'Family',
   'Friends',
-  'Colleagues',
-  'Community',
+  'Remembrance',
 ];
 
 function getInitials(name: string): string {
@@ -62,8 +59,6 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
   onBulkReassignGroup,
   onToggleCelebrated,
   onOpenAddModal,
-  onClearSeeded,
-  hasOnlySeeded,
 }) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -147,6 +142,17 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
           {items.map((entry) => {
             const isDeleting = confirmDeleteId === entry.id;
             const isSelected = selectedIds.has(entry.id);
+            const cycleStats = getCountdownCycleStats(entry);
+            const progressScale = entry.isToday
+              ? 1
+              : Math.max(0.04, cycleStats.progressRatio);
+            const progressBarColor = entry.isToday
+              ? 'bg-emerald-500 dark:bg-emerald-400'
+              : entry.group === 'Remembrance'
+              ? 'bg-violet-500 dark:bg-[#A78BFA]'
+              : entry.daysUntil <= 7
+              ? 'bg-amber-500 dark:bg-amber-400'
+              : 'bg-[#1D8FE1] dark:bg-[#38BDF8]';
 
             return (
               <li
@@ -222,11 +228,23 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                       {entry.turningAge !== null && (
                         <>
                           <span aria-hidden="true">·</span>
-                          <span className="tabular-nums">Turning {entry.turningAge}</span>
+                          <span className="tabular-nums">
+                            {entry.group === 'Remembrance'
+                              ? `${entry.turningAge} yrs`
+                              : `Turning ${entry.turningAge}`}
+                          </span>
                         </>
                       )}
                       <span aria-hidden="true">·</span>
-                      <span>{entry.group}</span>
+                      <span
+                        className={
+                          entry.group === 'Remembrance'
+                            ? 'text-violet-600 dark:text-violet-300 font-medium'
+                            : undefined
+                        }
+                      >
+                        {entry.group}
+                      </span>
                       <span aria-hidden="true">·</span>
                       <span>
                         {entry.advanceDays === 0
@@ -243,27 +261,68 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-14 sm:pl-0">
-                  <span
-                    className={`font-mono text-sm font-medium tabular-nums min-w-[48px] text-left sm:text-right ${
+                <div className="flex items-center justify-between sm:justify-end gap-3.5 shrink-0 pl-14 sm:pl-0">
+                  <div
+                    className="flex flex-col items-start sm:items-end min-w-[64px]"
+                    title={
                       entry.isToday
-                        ? 'text-[#1D8FE1] dark:text-[#38BDF8]'
-                        : entry.daysUntil <= 7
-                        ? 'text-amber-600 dark:text-amber-300'
-                        : 'text-slate-500 dark:text-slate-400'
-                    }`}
+                        ? 'Today (100% of year cycle)'
+                        : `${cycleStats.remainingDays} ${
+                            cycleStats.remainingDays === 1 ? 'day' : 'days'
+                          } left · ${cycleStats.percentComplete}% of year elapsed`
+                    }
                   >
-                    {formatCompactCountdown(entry.daysUntil)}
-                  </span>
+                    <span
+                      className={`font-mono text-sm font-medium tabular-nums leading-none ${
+                        entry.isToday
+                          ? 'text-emerald-600 dark:text-emerald-300'
+                          : entry.daysUntil <= 7
+                          ? 'text-amber-600 dark:text-amber-300'
+                          : 'text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      {formatCompactCountdown(entry.daysUntil)}
+                    </span>
+                    <div
+                      role="progressbar"
+                      aria-label={`Year progress until ${entry.name}`}
+                      aria-valuemin={0}
+                      aria-valuemax={cycleStats.totalDays}
+                      aria-valuenow={cycleStats.elapsedDays}
+                      aria-valuetext={
+                        entry.isToday
+                          ? 'Today'
+                          : `${cycleStats.remainingDays} days remaining, ${cycleStats.percentComplete} percent elapsed`
+                      }
+                      className="mt-1.5 h-1.5 w-16 rounded-full bg-slate-200/80 dark:bg-white/[0.08] overflow-hidden"
+                    >
+                      <div
+                        className={`h-full w-full origin-left rounded-full ${progressBarColor} transition-transform duration-300 ease-out motion-reduce:transition-none`}
+                        style={{transform: `scaleX(${progressScale})`}}
+                      />
+                    </div>
+                  </div>
 
                   {!isSelectionMode && (
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => onToggleCelebrated(entry)}
-                        title={entry.isCelebratedThisYear ? 'Wish recorded' : 'Mark wish sent'}
+                        title={
+                          entry.group === 'Remembrance'
+                            ? entry.isCelebratedThisYear
+                              ? 'Remembrance marked'
+                              : 'Mark remembered'
+                            : entry.isCelebratedThisYear
+                            ? 'Wish recorded'
+                            : 'Mark wish sent'
+                        }
                         aria-label={
-                          entry.isCelebratedThisYear
+                          entry.group === 'Remembrance'
+                            ? entry.isCelebratedThisYear
+                              ? `Undo remembrance marked for ${entry.name}`
+                              : `Mark remembered for ${entry.name}`
+                            : entry.isCelebratedThisYear
                             ? `Undo wish recorded for ${entry.name}`
                             : `Mark wish sent for ${entry.name}`
                         }
@@ -275,7 +334,13 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                       >
                         <Check className="w-4 h-4" />
                         <span className="hidden lg:inline">
-                          {entry.isCelebratedThisYear ? 'Wished' : 'Wish'}
+                          {entry.group === 'Remembrance'
+                            ? entry.isCelebratedThisYear
+                              ? 'Remembered'
+                              : 'Remember'
+                            : entry.isCelebratedThisYear
+                            ? 'Wished'
+                            : 'Wish'}
                         </span>
                       </button>
 
@@ -500,21 +565,6 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
               </button>
             )}
           </div>
-        </div>
-      )}
-
-      {hasOnlySeeded && onClearSeeded && (
-        <div className="mt-5 px-4 py-3 rounded-xl border border-slate-200 dark:border-white/[0.07] bg-slate-100/60 dark:bg-white/[0.04] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <p className="text-xs text-slate-600 dark:text-slate-300">
-            Showing four starter examples stored locally on your device. Edit them or start with a blank list.
-          </p>
-          <button
-            type="button"
-            onClick={onClearSeeded}
-            className="text-xs font-medium text-[#1D8FE1] dark:text-[#38BDF8] hover:underline whitespace-nowrap shrink-0 self-start sm:self-auto cursor-pointer"
-          >
-            Clear starter examples
-          </button>
         </div>
       )}
 

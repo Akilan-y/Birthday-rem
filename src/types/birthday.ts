@@ -1,4 +1,4 @@
-export type RelationshipGroup = 'Family' | 'Friends' | 'Colleagues' | 'Community';
+export type RelationshipGroup = 'Family' | 'Friends' | 'Remembrance';
 
 export type AdvanceNoticeDays = 0 | 1 | 3 | 7;
 
@@ -8,6 +8,7 @@ export type WorkspaceView =
   | 'statistics'
   | 'assistant'
   | 'reminders'
+  | 'sheets'
   | 'vault';
 
 export type SortMode = 'soonest' | 'alphabetical' | 'month';

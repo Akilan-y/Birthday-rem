@@ -92,7 +92,7 @@
         },
         "group": {
           "type": "string",
-          "enum": ["Family", "Friends", "Colleagues", "Community"],
+          "enum": ["Family", "Friends", "Remembrance"],
           "maxLength": 20,
           "description": "Relationship circle."
         },

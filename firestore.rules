@@ -33,7 +33,7 @@ service cloud.firestore {
     }
 
     function isValidGroup(group) {
-      return group is string && group in ['Family', 'Friends', 'Colleagues', 'Community'];
+      return group is string && group in ['Family', 'Friends', 'Remembrance'];
     }
 
     function isValidAdvanceDays(days) {

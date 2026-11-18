@@ -106,6 +106,36 @@ export function formatCountdownLabel(daysUntil: number): string {
   return `In ${daysUntil} days`;
 }
 
+export interface CountdownCycleStats {
+  totalDays: number;
+  elapsedDays: number;
+  remainingDays: number;
+  progressRatio: number;
+  percentComplete: number;
+  previousYear: number;
+}
+
+export function getCountdownCycleStats(entry: ComputedBirthday): CountdownCycleStats {
+  const prevYear = entry.nextOccurrenceYear - 1;
+  const prevSafeDay = getSafeDayForYear(entry.month, entry.day, prevYear);
+  const prevDate = new Date(prevYear, entry.month - 1, prevSafeDay);
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const totalDays = Math.max(1, Math.round((entry.nextDate.getTime() - prevDate.getTime()) / msPerDay));
+  const remainingDays = Math.max(0, entry.daysUntil);
+  const elapsedDays = Math.max(0, Math.min(totalDays, totalDays - remainingDays));
+  const rawRatio = entry.isToday ? 1 : Math.max(0, Math.min(1, elapsedDays / totalDays));
+  const percentComplete = entry.isToday ? 100 : Math.min(99, Math.round(rawRatio * 100));
+
+  return {
+    totalDays,
+    elapsedDays,
+    remainingDays,
+    progressRatio: rawRatio,
+    percentComplete,
+    previousYear: prevYear,
+  };
+}
+
 export function formatCompactCountdown(daysUntil: number): string {
   if (daysUntil === 0) return 'Today';
   if (daysUntil === 1) return '1d';

@@ -26,72 +26,31 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   notifiedKeys: [],
 };
 
-function createSeedBirthdays(now = new Date()): BirthdayEntry[] {
-  const addDays = (offset: number) => {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
-    return {month: d.getMonth() + 1, day: d.getDate()};
-  };
+const SAMPLE_BIRTHDAY_IDS = new Set([
+  'seed-maya',
+  'seed-arthur',
+  'seed-nadia',
+  'seed-soren',
+]);
 
-  const today = addDays(0);
-  const inFourDays = addDays(4);
-  const inTwelveDays = addDays(12);
-  const inFortyFiveDays = addDays(45);
-  const stamp = now.toISOString();
+export function isSampleBirthdayId(id: string): boolean {
+  return SAMPLE_BIRTHDAY_IDS.has(id) || id.startsWith('seed-');
+}
 
-  return [
-    {
-      id: 'seed-maya',
-      name: 'Maya Lin',
-      month: today.month,
-      day: today.day,
-      birthYear: 1995,
-      group: 'Friends',
-      note: 'Prefers handwritten postcards and loose-leaf jasmine tea.',
-      advanceDays: 0,
-      celebratedYears: [],
-      createdAt: stamp,
-      updatedAt: stamp,
-    },
-    {
-      id: 'seed-arthur',
-      name: 'Arthur Pendelton',
-      month: inFourDays.month,
-      day: inFourDays.day,
-      birthYear: 1968,
-      group: 'Family',
-      note: 'Heirloom tomato seeds or a weekend walk at the conservatory.',
-      advanceDays: 1,
-      celebratedYears: [],
-      createdAt: stamp,
-      updatedAt: stamp,
-    },
-    {
-      id: 'seed-nadia',
-      name: 'Nadia Okafor',
-      month: inTwelveDays.month,
-      day: inTwelveDays.day,
-      birthYear: 1992,
-      group: 'Colleagues',
-      note: 'Send a quiet morning note before the team standup.',
-      advanceDays: 3,
-      celebratedYears: [],
-      createdAt: stamp,
-      updatedAt: stamp,
-    },
-    {
-      id: 'seed-soren',
-      name: 'Soren Lindqvist',
-      month: inFortyFiveDays.month,
-      day: inFortyFiveDays.day,
-      birthYear: null,
-      group: 'Community',
-      note: 'Community garden coordinator — loves sourdough and beeswax wraps.',
-      advanceDays: 7,
-      celebratedYears: [],
-      createdAt: stamp,
-      updatedAt: stamp,
-    },
-  ];
+export function normalizeRelationshipGroup(raw: unknown): RelationshipGroup {
+  const normalized = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+  if (normalized === 'family') return 'Family';
+  if (
+    normalized === 'remembrance' ||
+    normalized === 'rememberence' ||
+    normalized === 'remember' ||
+    normalized === 'memorial' ||
+    normalized === 'death' ||
+    normalized === 'in memory'
+  ) {
+    return 'Remembrance';
+  }
+  return 'Friends';
 }
 
 function openVaultDB(): Promise<IDBDatabase> {
@@ -152,32 +111,39 @@ export async function loadVaultData(): Promise<{
 
     db.close();
 
-    if (!alreadyInitialized && birthdays.length === 0) {
-      const seeded = createSeedBirthdays();
+    if (!alreadyInitialized) {
       localStorage.setItem(LS_INITIALIZED_KEY, 'true');
-      await saveBirthdaysToVault(seeded);
-      await saveSettingsToVault(DEFAULT_NOTIFICATION_SETTINGS);
-      return {
-        birthdays: seeded,
-        settings: DEFAULT_NOTIFICATION_SETTINGS,
-        logs: [],
-      };
+      await saveSettingsToVault(settingsRecord?.value ?? DEFAULT_NOTIFICATION_SETTINGS);
+    }
+
+    let migratedGroup = false;
+    const cleanedBirthdays = birthdays
+      .filter((item) => !isSampleBirthdayId(item.id))
+      .map((item) => {
+        const normalizedGroup = normalizeRelationshipGroup(item.group);
+        if (normalizedGroup !== item.group) {
+          migratedGroup = true;
+          return {...item, group: normalizedGroup};
+        }
+        return item;
+      });
+    if (cleanedBirthdays.length !== birthdays.length || migratedGroup) {
+      await saveBirthdaysToVault(cleanedBirthdays);
     }
 
     return {
-      birthdays,
+      birthdays: cleanedBirthdays,
       settings: settingsRecord?.value ?? DEFAULT_NOTIFICATION_SETTINGS,
       logs: logsRecord?.value ?? [],
     };
   } catch {
     // Fallback cleanly to localStorage if IndexedDB is restricted
     if (!alreadyInitialized) {
-      const seeded = createSeedBirthdays();
       localStorage.setItem(LS_INITIALIZED_KEY, 'true');
-      localStorage.setItem(LS_BIRTHDAYS_KEY, JSON.stringify(seeded));
+      localStorage.setItem(LS_BIRTHDAYS_KEY, JSON.stringify([]));
       localStorage.setItem(LS_SETTINGS_KEY, JSON.stringify(DEFAULT_NOTIFICATION_SETTINGS));
       return {
-        birthdays: seeded,
+        birthdays: [],
         settings: DEFAULT_NOTIFICATION_SETTINGS,
         logs: [],
       };
@@ -187,8 +153,24 @@ export async function loadVaultData(): Promise<{
     const rawSettings = localStorage.getItem(LS_SETTINGS_KEY);
     const rawLogs = localStorage.getItem(LS_LOGS_KEY);
 
+    const parsedBirthdays = rawBirthdays ? (JSON.parse(rawBirthdays) as BirthdayEntry[]) : [];
+    let migratedGroup = false;
+    const cleanedBirthdays = parsedBirthdays
+      .filter((item) => !isSampleBirthdayId(item.id))
+      .map((item) => {
+        const normalizedGroup = normalizeRelationshipGroup(item.group);
+        if (normalizedGroup !== item.group) {
+          migratedGroup = true;
+          return {...item, group: normalizedGroup};
+        }
+        return item;
+      });
+    if (cleanedBirthdays.length !== parsedBirthdays.length || migratedGroup) {
+      localStorage.setItem(LS_BIRTHDAYS_KEY, JSON.stringify(cleanedBirthdays));
+    }
+
     return {
-      birthdays: rawBirthdays ? (JSON.parse(rawBirthdays) as BirthdayEntry[]) : [],
+      birthdays: cleanedBirthdays,
       settings: rawSettings
         ? (JSON.parse(rawSettings) as NotificationSettings)
         : DEFAULT_NOTIFICATION_SETTINGS,
@@ -332,7 +314,6 @@ export function parseImportedBackup(rawJson: string): {
     throw new Error('Invalid backup format: expected a birthdays array.');
   }
 
-  const validGroups = new Set(['Family', 'Friends', 'Colleagues', 'Community']);
   const validAdvance = new Set([0, 1, 3, 7]);
   const nowIso = new Date().toISOString();
 
@@ -360,7 +341,7 @@ export function parseImportedBackup(rawJson: string): {
         typeof item.birthYear === 'number' && item.birthYear >= 1900 && item.birthYear <= 2100
           ? Math.trunc(item.birthYear)
           : null,
-      group: validGroups.has(item.group) ? item.group : 'Friends',
+      group: normalizeRelationshipGroup(item.group),
       note: typeof item.note === 'string' ? item.note.slice(0, 280) : '',
       advanceDays: validAdvance.has(item.advanceDays) ? item.advanceDays : 1,
       celebratedYears: Array.isArray(item.celebratedYears)
@@ -384,35 +365,103 @@ function escapeCsvCell(value: string | number | null | undefined): string {
   return str;
 }
 
-export function buildCSVExport(birthdays: BirthdayEntry[]): string {
-  const headers = [
-    'id',
-    'name',
-    'month',
-    'day',
-    'birthYear',
-    'group',
-    'advanceDays',
-    'note',
-    'celebratedYears',
-  ];
-  const rows = birthdays.map((entry) =>
-    [
-      escapeCsvCell(entry.id),
-      escapeCsvCell(entry.name),
-      escapeCsvCell(entry.month),
-      escapeCsvCell(entry.day),
-      escapeCsvCell(entry.birthYear),
-      escapeCsvCell(entry.group),
-      escapeCsvCell(entry.advanceDays),
-      escapeCsvCell(entry.note),
-      escapeCsvCell(entry.celebratedYears.join(';')),
-    ].join(',')
-  );
-  return [headers.join(','), ...rows].join('\r\n');
+export interface SheetIncompleteRow {
+  id: string;
+  name: string;
+  event: string;
+  group: RelationshipGroup;
+  advanceDays: AdvanceNoticeDays;
+  note: string;
 }
 
-function parseCsvRows(rawCsv: string): string[][] {
+export interface ParsedTableResult {
+  entries: BirthdayEntry[];
+  incompleteRows: SheetIncompleteRow[];
+  isEventsSchema: boolean;
+  missingExtraColumns: string[];
+  headers: string[];
+}
+
+export function formatReminderLabel(days: AdvanceNoticeDays): string {
+  if (days === 0) return 'On day';
+  if (days === 1) return '1 day prior';
+  return `${days} days prior`;
+}
+
+export function parseReminderDays(raw: string): AdvanceNoticeDays {
+  const normalized = raw.trim().toLowerCase();
+  if (!normalized) return 1;
+  if (normalized === '0' || normalized.includes('on day') || normalized.includes('same day') || normalized === '0d') {
+    return 0;
+  }
+  const numMatch = /(\d+)/.exec(normalized);
+  if (numMatch) {
+    const val = Number.parseInt(numMatch[1], 10);
+    if (val === 0) return 0;
+    if (val === 1) return 1;
+    if (val === 3) return 3;
+    if (val === 7) return 7;
+    if (val > 5) return 7;
+    if (val >= 2) return 3;
+  }
+  return 1;
+}
+
+export function formatBirthdaySheetDate(month: number, day: number, birthYear: number | null): string {
+  const dd = String(day).padStart(2, '0');
+  const mm = String(month).padStart(2, '0');
+  return birthYear ? `${dd}/${mm}/${birthYear}` : `${dd}/${mm}`;
+}
+
+export function buildBirthdayTableRows(
+  birthdays: BirthdayEntry[],
+  incompleteRows: SheetIncompleteRow[] = []
+): string[][] {
+  const headers = [
+    'Sl. No.',
+    'Names',
+    'Date',
+    'Event',
+    'Circle',
+    'Reminder',
+    'Note',
+    'Broll ID',
+  ];
+
+  const rows: string[][] = birthdays.map((entry, idx) => [
+    String(idx + 1),
+    entry.name,
+    formatBirthdaySheetDate(entry.month, entry.day, entry.birthYear),
+    entry.group === 'Remembrance' ? 'Remembrance' : 'Birthday',
+    entry.group,
+    formatReminderLabel(entry.advanceDays),
+    entry.note,
+    entry.id,
+  ]);
+
+  incompleteRows.forEach((row, idx) => {
+    rows.push([
+      String(birthdays.length + idx + 1),
+      row.name,
+      '',
+      row.event || 'Birthday',
+      row.group,
+      formatReminderLabel(row.advanceDays),
+      row.note,
+      row.id,
+    ]);
+  });
+
+  return [headers, ...rows];
+}
+
+export function buildCSVExport(birthdays: BirthdayEntry[]): string {
+  return buildBirthdayTableRows(birthdays)
+    .map((row) => row.map((cell) => escapeCsvCell(cell)).join(','))
+    .join('\r\n');
+}
+
+export function parseCsvRows(rawCsv: string): string[][] {
   const input = rawCsv.replace(/^\uFEFF/, '');
   const rows: string[][] = [];
   let row: string[] = [];
@@ -464,10 +513,35 @@ function parseCsvRows(rawCsv: string): string[][] {
 }
 
 function normalizeHeaderKey(header: string): string {
-  return header.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  return header.trim().toLowerCase().replace(/[\s_.-]+/g, '');
 }
 
-function parseFlexibleDateString(raw: string): {
+function inferColumnDayFirst(
+  rows: string[][],
+  dateIdx: number,
+  isEventsSchema: boolean
+): boolean {
+  if (dateIdx === -1) return true;
+  let sawDotSeparator = false;
+  for (let r = 1; r < rows.length; r++) {
+    const raw = (rows[r][dateIdx] ?? '').trim();
+    if (!raw) continue;
+    if (/^\d{4}[-/.]/.test(raw)) continue;
+    const match = /^(\d{1,2})[-/.](\d{1,2})(?:[-/.](\d{2,4}))?$/.exec(raw);
+    if (!match) continue;
+    if (raw.includes('.')) sawDotSeparator = true;
+    const first = Number(match[1]);
+    const second = Number(match[2]);
+    if (first > 12 && second >= 1 && second <= 12) return true;
+    if (second > 12 && first >= 1 && first <= 12) return false;
+  }
+  return sawDotSeparator || isEventsSchema;
+}
+
+function parseFlexibleDateString(
+  raw: string,
+  preferDayFirst = true
+): {
   month: number;
   day: number;
   birthYear: number | null;
@@ -475,8 +549,8 @@ function parseFlexibleDateString(raw: string): {
   const trimmed = raw.trim();
   if (!trimmed) return null;
 
-  // YYYY-MM-DD or YYYY/MM/DD
-  const isoMatch = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/.exec(trimmed);
+  // YYYY-MM-DD or YYYY/MM/DD or YYYY.MM.DD
+  const isoMatch = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/.exec(trimmed);
   if (isoMatch) {
     const year = Number(isoMatch[1]);
     const month = Number(isoMatch[2]);
@@ -490,12 +564,18 @@ function parseFlexibleDateString(raw: string): {
     }
   }
 
-  // MM/DD/YYYY or MM-DD-YYYY
-  const mdyYearMatch = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/.exec(trimmed);
-  if (mdyYearMatch) {
-    const month = Number(mdyYearMatch[1]);
-    const day = Number(mdyYearMatch[2]);
-    const year = Number(mdyYearMatch[3]);
+  // DD/MM/YYYY, DD-MM-YYYY, DD.M.YYYY or MM/DD/YYYY
+  const dmyOrMdyYearMatch = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/.exec(trimmed);
+  if (dmyOrMdyYearMatch) {
+    const first = Number(dmyOrMdyYearMatch[1]);
+    const second = Number(dmyOrMdyYearMatch[2]);
+    const year = Number(dmyOrMdyYearMatch[3]);
+    let dayFirst = preferDayFirst || trimmed.includes('.');
+    if (first > 12 && second <= 12) dayFirst = true;
+    else if (second > 12 && first <= 12) dayFirst = false;
+
+    const day = dayFirst ? first : second;
+    const month = dayFirst ? second : first;
     if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
       return {
         month,
@@ -505,11 +585,17 @@ function parseFlexibleDateString(raw: string): {
     }
   }
 
-  // MM/DD or MM-DD
-  const mdMatch = /^(\d{1,2})[-/](\d{1,2})$/.exec(trimmed);
+  // DD/MM or MM/DD (no year)
+  const mdMatch = /^(\d{1,2})[-/.](\d{1,2})$/.exec(trimmed);
   if (mdMatch) {
-    const month = Number(mdMatch[1]);
-    const day = Number(mdMatch[2]);
+    const first = Number(mdMatch[1]);
+    const second = Number(mdMatch[2]);
+    let dayFirst = preferDayFirst || trimmed.includes('.');
+    if (first > 12 && second <= 12) dayFirst = true;
+    else if (second > 12 && first <= 12) dayFirst = false;
+
+    const day = dayFirst ? first : second;
+    const month = dayFirst ? second : first;
     if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
       return {month, day, birthYear: null};
     }
@@ -518,14 +604,15 @@ function parseFlexibleDateString(raw: string): {
   return null;
 }
 
-export function parseImportedCSV(rawCsv: string): BirthdayEntry[] {
-  const rows = parseCsvRows(rawCsv);
-  if (rows.length < 2) {
-    throw new Error('CSV file must include a header row and at least one birthday entry.');
+export function parseTableRowsToBirthdaysDetailed(rawRows: string[][]): ParsedTableResult {
+  const rows = rawRows.filter((r) => r.some((c) => String(c ?? '').trim().length > 0));
+  if (rows.length < 1) {
+    throw new Error('Spreadsheet must include a header row.');
   }
 
+  const headers = rows[0].map((h) => String(h ?? '').trim());
   const headerMap = new Map<string, number>();
-  rows[0].forEach((header, idx) => {
+  headers.forEach((header, idx) => {
     headerMap.set(normalizeHeaderKey(header), idx);
   });
 
@@ -537,39 +624,57 @@ export function parseImportedCSV(rawCsv: string): BirthdayEntry[] {
     return -1;
   };
 
-  const nameIdx = colIndex('name', 'fullname', 'person');
+  const nameIdx = colIndex('name', 'names', 'fullname', 'person');
   const monthIdx = colIndex('month');
   const dayIdx = colIndex('day');
   const dateIdx = colIndex('date', 'birthday', 'birthdate', 'dob');
 
   if (nameIdx === -1 || ((monthIdx === -1 || dayIdx === -1) && dateIdx === -1)) {
     throw new Error(
-      'Invalid CSV columns: expected "name" along with "month" & "day" (or a "date" column).'
+      'Invalid columns: expected "Names" (or "Name") along with "Date" (or "Month" & "Day").'
     );
   }
 
-  const idIdx = colIndex('id');
+  const idIdx = colIndex('brollid', 'id');
   const yearIdx = colIndex('birthyear', 'year');
-  const groupIdx = colIndex('group', 'circle', 'relationship');
-  const advanceIdx = colIndex('advancedays', 'noticedays', 'reminderdays');
+  const groupIdx = colIndex('circle', 'group', 'relationship');
+  const advanceIdx = colIndex('reminder', 'advancedays', 'noticedays', 'reminderdays');
   const noteIdx = colIndex('note', 'notes', 'memo');
+  const eventIdx = colIndex('event');
+  const slNoIdx = colIndex('slno', 'serialno', 'sno');
   const celebratedIdx = colIndex('celebratedyears');
 
-  const validGroups = new Map<string, RelationshipGroup>([
-    ['family', 'Family'],
-    ['friends', 'Friends'],
-    ['colleagues', 'Colleagues'],
-    ['community', 'Community'],
-  ]);
-  const validAdvance = new Set<AdvanceNoticeDays>([0, 1, 3, 7]);
+  const isEventsSchema = slNoIdx !== -1 || eventIdx !== -1 || headerMap.has('names');
+  const missingExtraColumns: string[] = [];
+  if (groupIdx === -1) missingExtraColumns.push('Circle');
+  if (advanceIdx === -1) missingExtraColumns.push('Reminder');
+  if (noteIdx === -1) missingExtraColumns.push('Note');
+  if (idIdx === -1) missingExtraColumns.push('Broll ID');
+
+  const preferDayFirst = inferColumnDayFirst(rows, dateIdx, isEventsSchema);
+
   const nowIso = new Date().toISOString();
 
-  const parsedEntries: BirthdayEntry[] = [];
+  const entries: BirthdayEntry[] = [];
+  const incompleteRows: SheetIncompleteRow[] = [];
 
   for (let r = 1; r < rows.length; r++) {
     const cells = rows[r];
     const name = (cells[nameIdx] ?? '').trim().slice(0, 80);
     if (!name) continue;
+
+    const rawGroup = groupIdx !== -1 ? (cells[groupIdx] ?? '').trim() : '';
+    const rawEvent = eventIdx !== -1 ? (cells[eventIdx] ?? '').trim() : '';
+    const group: RelationshipGroup = rawGroup
+      ? normalizeRelationshipGroup(rawGroup)
+      : normalizeRelationshipGroup(rawEvent) === 'Remembrance'
+      ? 'Remembrance'
+      : 'Friends';
+    const advanceDays: AdvanceNoticeDays =
+      advanceIdx !== -1 ? parseReminderDays(cells[advanceIdx] ?? '') : 1;
+    const note = noteIdx !== -1 ? (cells[noteIdx] ?? '').trim().slice(0, 280) : '';
+    const rawId = idIdx !== -1 ? (cells[idIdx] ?? '').trim() : '';
+    const eventLabel = rawEvent || (group === 'Remembrance' ? 'Remembrance' : 'Birthday');
 
     let month = monthIdx !== -1 ? Number.parseInt((cells[monthIdx] ?? '').trim(), 10) : NaN;
     let day = dayIdx !== -1 ? Number.parseInt((cells[dayIdx] ?? '').trim(), 10) : NaN;
@@ -583,7 +688,7 @@ export function parseImportedCSV(rawCsv: string): BirthdayEntry[] {
     }
 
     if ((Number.isNaN(month) || Number.isNaN(day)) && dateIdx !== -1) {
-      const parsedDate = parseFlexibleDateString(cells[dateIdx] ?? '');
+      const parsedDate = parseFlexibleDateString(cells[dateIdx] ?? '', preferDayFirst);
       if (parsedDate) {
         month = parsedDate.month;
         day = parsedDate.day;
@@ -601,20 +706,16 @@ export function parseImportedCSV(rawCsv: string): BirthdayEntry[] {
       day < 1 ||
       day > 31
     ) {
+      incompleteRows.push({
+        id: rawId || `pending-${r}-${name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+        name,
+        event: eventLabel,
+        group,
+        advanceDays,
+        note,
+      });
       continue;
     }
-
-    const rawGroup = groupIdx !== -1 ? (cells[groupIdx] ?? '').trim().toLowerCase() : '';
-    const group: RelationshipGroup = validGroups.get(rawGroup) ?? 'Friends';
-
-    const rawAdvance =
-      advanceIdx !== -1 ? Number.parseInt((cells[advanceIdx] ?? '').trim(), 10) : 1;
-    const advanceDays: AdvanceNoticeDays = validAdvance.has(rawAdvance as AdvanceNoticeDays)
-      ? (rawAdvance as AdvanceNoticeDays)
-      : 1;
-
-    const note = noteIdx !== -1 ? (cells[noteIdx] ?? '').trim().slice(0, 280) : '';
-    const rawId = idIdx !== -1 ? (cells[idIdx] ?? '').trim() : '';
 
     const celebratedYears =
       celebratedIdx !== -1
@@ -624,7 +725,7 @@ export function parseImportedCSV(rawCsv: string): BirthdayEntry[] {
             .filter((y) => Number.isInteger(y) && y >= 1900 && y <= 2200)
         : [];
 
-    parsedEntries.push({
+    entries.push({
       id: rawId || crypto.randomUUID(),
       name,
       month,
@@ -639,11 +740,25 @@ export function parseImportedCSV(rawCsv: string): BirthdayEntry[] {
     });
   }
 
-  if (parsedEntries.length === 0) {
-    throw new Error('No valid birthday rows found in the CSV file.');
-  }
+  return {
+    entries,
+    incompleteRows,
+    isEventsSchema,
+    missingExtraColumns,
+    headers,
+  };
+}
 
-  return parsedEntries;
+export function parseTableRowsToBirthdays(rawRows: string[][]): BirthdayEntry[] {
+  const result = parseTableRowsToBirthdaysDetailed(rawRows);
+  if (result.entries.length === 0) {
+    throw new Error('No valid birthday rows found.');
+  }
+  return result.entries;
+}
+
+export function parseImportedCSV(rawCsv: string): BirthdayEntry[] {
+  return parseTableRowsToBirthdays(parseCsvRows(rawCsv));
 }
 
 export function parseBackupFile(
