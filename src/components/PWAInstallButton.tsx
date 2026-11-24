@@ -15,9 +15,9 @@ export const PWAInstallButton: React.FC = () => {
       <button
         type="button"
         onClick={install}
-        className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.05] text-xs font-medium text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/[0.1] transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8]"
+        className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-xs font-medium text-neutral-950 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
       >
-        <Download className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+        <Download className="w-3.5 h-3.5" />
         Install Offline App
       </button>
     );
@@ -29,24 +29,24 @@ export const PWAInstallButton: React.FC = () => {
         <button
           type="button"
           onClick={() => setShowIOSGuide(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.05] text-xs font-medium text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/[0.1] transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8]"
+          className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-xs font-medium text-neutral-950 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
         >
-          <Download className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+          <Download className="w-3.5 h-3.5" />
           Install on iOS
         </button>
 
         {showIOSGuide && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby="ios-install-title"
           >
-            <div className="w-full max-w-sm rounded-2xl border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-[#212A37] p-6 shadow-2xl">
+            <div className="w-full max-w-sm rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 shadow-2xl">
               <div className="flex items-start justify-between gap-4">
                 <h3
                   id="ios-install-title"
-                  className="font-display text-lg font-semibold text-slate-900 dark:text-white"
+                  className="font-display text-lg font-medium text-neutral-950 dark:text-white"
                 >
                   Install on iPhone or iPad
                 </h3>
@@ -54,20 +54,20 @@ export const PWAInstallButton: React.FC = () => {
                   type="button"
                   onClick={() => setShowIOSGuide(false)}
                   aria-label="Close installation guide"
-                  className="p-2 -mr-2 -mt-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.08] min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
+                  className="p-2 -mr-2 -mt-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 min-h-[38px] min-w-[38px] flex items-center justify-center cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <ol className="mt-4 space-y-2.5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              <ol className="mt-4 space-y-2.5 text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">
                 <li>1. Tap the Share icon in the Safari toolbar.</li>
                 <li>2. Scroll down and select Add to Home Screen.</li>
-                <li>3. Open Linden from your home screen for full offline use.</li>
+                <li>3. Open Broll from your home screen for full offline use.</li>
               </ol>
               <button
                 type="button"
                 onClick={() => setShowIOSGuide(false)}
-                className="mt-6 w-full py-2.5 px-4 rounded-xl bg-[#1D8FE1] text-white text-sm font-medium hover:bg-[#197CC6] transition-colors cursor-pointer"
+                className="mt-6 w-full py-2.5 px-4 rounded-lg bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-950 text-sm font-medium transition-colors cursor-pointer"
               >
                 Done
               </button>

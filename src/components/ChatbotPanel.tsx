@@ -184,18 +184,18 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
   return (
     <section
       aria-label="Gemini celebration assistant"
-      className="flex flex-col h-[calc(100vh-14rem)] min-h-[520px] rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] overflow-hidden"
+      className="flex flex-col h-[calc(100vh-14rem)] min-h-[520px] rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden"
     >
       {/* Header & Role Selector */}
-      <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-white/[0.07] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 border-b border-neutral-200 dark:border-neutral-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-[#1D8FE1] dark:text-[#38BDF8]" />
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+            <MessageSquare className="w-4 h-4 text-neutral-950 dark:text-white" />
+            <h2 className="font-display text-base font-medium text-neutral-950 dark:text-white">
               Celebration Assistant
             </h2>
           </div>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
             {activePersonaConfig.description}
           </p>
         </div>
@@ -204,7 +204,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
           <div
             role="tablist"
             aria-label="Assistant role"
-            className="flex items-center gap-1 p-1 rounded-full bg-slate-200/70 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.07] overflow-x-auto max-w-full"
+            className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-x-auto max-w-full"
           >
             {PERSONA_OPTIONS.map((opt) => {
               const active = persona === opt.id;
@@ -215,10 +215,10 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
                   role="tab"
                   aria-selected={active}
                   onClick={() => setPersona(opt.id)}
-                  className={`px-3 py-1.5 min-h-[34px] rounded-full text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`px-3 py-1 min-h-[30px] rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     active
-                      ? 'bg-[#1D8FE1] text-white'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                   }`}
                 >
                   {opt.label}
@@ -233,7 +233,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
               onClick={onClearMessages}
               title="Clear conversation history"
               aria-label="Clear conversation history"
-              className="min-h-[38px] px-3 rounded-full border border-slate-200 dark:border-white/[0.08] text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="min-h-[36px] px-3 rounded-lg border border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 inline-flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Clear
@@ -246,13 +246,13 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center max-w-lg mx-auto py-8">
-            <div className="w-11 h-11 rounded-2xl bg-[#1D8FE1]/15 border border-[#1D8FE1]/30 flex items-center justify-center text-[#1D8FE1] dark:text-[#38BDF8]">
+            <div className="w-11 h-11 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center text-neutral-950 dark:text-white">
               <Gift className="w-5 h-5" />
             </div>
-            <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-white">
+            <h3 className="mt-4 font-display text-lg font-medium text-neutral-950 dark:text-white">
               Ask for gift ideas, milestone plans, or birthday notes
             </h3>
-            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
               Your conversation stays multi-turn across messages, and the assistant can reference your upcoming birthday dates and notes.
             </p>
             <div className="mt-5 flex flex-col gap-2 w-full">
@@ -261,7 +261,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
                   key={prompt}
                   type="button"
                   onClick={() => sendMessageText(prompt)}
-                  className="w-full text-left px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] text-xs text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                  className="w-full text-left px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs text-neutral-700 dark:text-neutral-200 transition-colors cursor-pointer"
                 >
                   {prompt}
                 </button>
@@ -277,16 +277,18 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
                 className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                  className={`max-w-[85%] sm:max-w-[75%] rounded-xl px-4 py-3 text-sm leading-relaxed ${
                     isUser
-                      ? 'bg-[#1D8FE1] text-white'
-                      : 'border border-slate-200 dark:border-white/[0.08] bg-slate-100/90 dark:bg-white/[0.05] text-slate-800 dark:text-slate-100'
+                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950'
+                      : 'border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100'
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                   <div
                     className={`mt-2 flex items-center justify-between gap-4 text-[10px] ${
-                      isUser ? 'text-white/75' : 'text-slate-400 dark:text-slate-500'
+                      isUser
+                        ? 'text-white/70 dark:text-neutral-950/60'
+                        : 'text-neutral-400 dark:text-neutral-500'
                     }`}
                   >
                     <span className="font-mono tabular-nums">
@@ -299,7 +301,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
                       <button
                         type="button"
                         onClick={() => handleCopy(msg.id, msg.text)}
-                        className="inline-flex items-center gap-1 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
+                        className="inline-flex items-center gap-1 hover:text-neutral-950 dark:hover:text-white cursor-pointer"
                       >
                         {copiedId === msg.id ? (
                           <>
@@ -323,7 +325,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
 
         {isSending && (
           <div className="flex justify-start">
-            <div className="rounded-2xl border border-slate-200 dark:border-white/[0.08] bg-slate-100/90 dark:bg-white/[0.05] px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+            <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 text-xs text-neutral-500 dark:text-neutral-400">
               Thinking...
             </div>
           </div>
@@ -334,10 +336,10 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
       {/* Error Banner + Composer */}
       <form
         onSubmit={handleSubmit}
-        className="p-4 border-t border-slate-200 dark:border-white/[0.07] bg-slate-50/70 dark:bg-white/[0.02]"
+        className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-950"
       >
         {error && (
-          <p className="mb-3 text-xs text-rose-500 dark:text-rose-400">{error}</p>
+          <p className="mb-3 text-xs text-rose-600 dark:text-rose-400">{error}</p>
         )}
         <div className="flex items-end gap-2.5">
           <textarea
@@ -352,13 +354,13 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({
             }}
             placeholder={`Ask ${activePersonaConfig.label}...`}
             aria-label="Message Gemini assistant"
-            className="flex-1 min-h-[44px] max-h-32 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#38BDF8] resize-none"
+            className="flex-1 min-h-[42px] max-h-32 px-3.5 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-sm text-neutral-950 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:border-neutral-950 dark:focus:border-neutral-300 resize-none"
           />
           <button
             type="submit"
             disabled={!input.trim() || isSending}
             aria-label="Send message"
-            className="min-h-[44px] px-4 rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-xs font-medium inline-flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none transition-colors shrink-0 cursor-pointer"
+            className="min-h-[42px] px-4 rounded-lg bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-950 text-xs font-medium inline-flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none transition-colors shrink-0 cursor-pointer"
           >
             <Send className="w-4 h-4" />
             <span className="hidden sm:inline">Send</span>

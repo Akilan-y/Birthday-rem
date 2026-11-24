@@ -110,6 +110,40 @@
           "type": "array",
           "description": "Bounded list of years in which wishes were recorded."
         },
+        "phone": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Optional phone number for the person."
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 160,
+          "description": "Optional email address for the person."
+        },
+        "relation": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "Optional relationship label such as Sister or Mentor."
+        },
+        "favoriteThings": {
+          "type": "string",
+          "maxLength": 280,
+          "description": "Optional favorite things or gift preferences."
+        },
+        "avatarFileId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Optional Google Drive file ID for full-resolution profile avatar."
+        },
+        "avatarThumb": {
+          "type": "string",
+          "maxLength": 45000,
+          "description": "Optional small compressed avatar thumbnail data URL for offline display."
+        },
+        "galleryPhotos": {
+          "type": "array",
+          "description": "Bounded list of Google Drive gallery photo references (max 50)."
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",

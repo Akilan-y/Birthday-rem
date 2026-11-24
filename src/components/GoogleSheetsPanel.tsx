@@ -13,7 +13,6 @@ import {
   Play,
   RefreshCw,
   Search,
-  Sparkles,
   Upload,
   X,
 } from 'lucide-react';
@@ -27,7 +26,6 @@ import {
   type DriveSpreadsheetFile,
   getSpreadsheetMetadata,
   listUserSpreadsheets,
-  loadAttachedEventsSheet,
   readBirthdaysFromSheetTab,
   type SpreadsheetMetadata,
   WorkspaceAuthError,
@@ -93,7 +91,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
   onSyncNow,
   onRecordSnapshot,
 }) => {
-  const {user, workspaceToken, signIn, invalidateWorkspaceToken} = useFirebase();
+  const {user, workspaceToken, connectWorkspace, invalidateWorkspaceToken} = useFirebase();
 
   const [spreadsheets, setSpreadsheets] = useState<DriveSpreadsheetFile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -111,12 +109,6 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
   const [parseNotice, setParseNotice] = useState<string | null>(null);
   const [isLoadingRows, setIsLoadingRows] = useState(false);
 
-  const [attachedEvents, setAttachedEvents] = useState<{
-    entries: BirthdayEntry[];
-    incompleteRows: SheetIncompleteRow[];
-  } | null>(null);
-  const [isCreatingEventsSheet, setIsCreatingEventsSheet] = useState(false);
-
   const [newSheetTitle, setNewSheetTitle] = useState(
     `Events (${new Date().toISOString().slice(0, 10)})`
   );
@@ -126,29 +118,6 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    loadAttachedEventsSheet()
-      .then((data) => {
-        if (active) setAttachedEvents(data);
-      })
-      .catch(() => {
-        // Ignore if asset not found
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const eventsFileMatch = useMemo(() => {
-    if (spreadsheets.length === 0) return null;
-    return (
-      spreadsheets.find((f) => f.name.trim().toLowerCase() === 'events') ??
-      spreadsheets.find((f) => f.name.toLowerCase().includes('events')) ??
-      null
-    );
-  }, [spreadsheets]);
 
   const handleApiError = useCallback(
     (err: unknown, fallback: string) => {
@@ -365,71 +334,6 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
     }
   };
 
-  const handleLoadAttachedLocally = async () => {
-    if (!attachedEvents || attachedEvents.entries.length === 0) return;
-    setErrorMessage(null);
-    await onImportBirthdays(attachedEvents.entries);
-    onUpdateIncompleteRows(attachedEvents.incompleteRows);
-    setStatusMessage(
-      `Imported ${attachedEvents.entries.length} birthdays from Events into Broll.`
-    );
-  };
-
-  const handleCreateSheetFromAttachedEvents = async () => {
-    if (!workspaceToken || !attachedEvents || isCreatingEventsSheet) return;
-    setIsCreatingEventsSheet(true);
-    setErrorMessage(null);
-    setStatusMessage(null);
-    try {
-      await onImportBirthdays(attachedEvents.entries);
-      onUpdateIncompleteRows(attachedEvents.incompleteRows);
-
-      const mergedToExport = [...birthdays];
-      const existingKeys = new Set(
-        mergedToExport.map((b) => `${b.name.trim().toLowerCase()}|${b.month}|${b.day}`)
-      );
-      for (const item of attachedEvents.entries) {
-        const key = `${item.name.trim().toLowerCase()}|${item.month}|${item.day}`;
-        if (!existingKeys.has(key)) {
-          existingKeys.add(key);
-          mergedToExport.push(item);
-        }
-      }
-
-      const created = await createBirthdaysSpreadsheet(
-        workspaceToken,
-        'Events',
-        mergedToExport,
-        {
-          tabTitle: 'Events',
-          incompleteRows: attachedEvents.incompleteRows,
-        }
-      );
-      const createdTab = created.tabs[0]?.title ?? 'Events';
-      onRecordSnapshot(mergedToExport, attachedEvents.incompleteRows);
-      onUpdateConfiguredTarget({
-        spreadsheetId: created.spreadsheetId,
-        spreadsheetTitle: created.title,
-        tabTitle: createdTab,
-        parallelSyncEnabled: true,
-        lastSyncedAt: new Date().toISOString(),
-        lastSyncSummary: `Connected with ${mergedToExport.length} entries + extra columns`,
-      });
-
-      setStatusMessage(
-        `Created "Events" Google Sheet with Circle, Reminder, and Note columns and enabled Parallel Sync.`
-      );
-      await loadSpreadsheets();
-      setSelectedFileId(created.spreadsheetId);
-      setMetadata(created);
-      setSelectedTab(createdTab);
-    } catch (err) {
-      handleApiError(err, 'Unable to create Events Google Sheet.');
-    } finally {
-      setIsCreatingEventsSheet(false);
-    }
-  };
-
   const handleRequestManualSync = () => {
     const target = configuredTarget
       ? {
@@ -558,14 +462,14 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
 
   return (
     <section aria-label="Google Sheets integration" className="space-y-6">
-      <div className="pb-4 border-b border-slate-200 dark:border-white/[0.07] flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+      <div className="pb-4 border-b border-neutral-200 dark:border-neutral-800 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-medium text-slate-900 dark:text-white">
+          <h2 className="font-display text-2xl font-medium tracking-tight text-neutral-950 dark:text-neutral-50">
             Google Sheets Parallel Sync
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400 max-w-2xl">
             Keep your Google Sheet and Broll updated in parallel with{' '}
-            <span className="font-medium text-slate-700 dark:text-slate-200">
+            <span className="font-medium text-neutral-900 dark:text-neutral-200">
               Circle, Reminder, and Note
             </span>{' '}
             columns. Edits on either side sync automatically once connected.
@@ -573,13 +477,13 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
         </div>
 
         {workspaceToken && (
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {configuredTarget?.parallelSyncEnabled && (
               <button
                 type="button"
                 onClick={handleManualSyncNow}
                 disabled={syncStatus === 'syncing'}
-                className="inline-flex items-center gap-2 px-3.5 py-2 min-h-[40px] rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-3.5 py-2 min-h-[38px] rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-950 dark:text-neutral-50 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
               >
                 {syncStatus === 'syncing' ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -596,7 +500,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
               disabled={
                 isSyncingWrite || (!configuredTarget && (!selectedFileId || !selectedTab))
               }
-              className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-xs font-medium shadow-[0_6px_16px_rgba(29,143,225,0.3)] transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-45 disabled:pointer-events-none"
+              className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg bg-neutral-950 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
             >
               {isSyncingWrite ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -610,7 +514,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
               type="button"
               onClick={() => loadSpreadsheets(searchTerm)}
               disabled={isLoadingFiles}
-              className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.05] text-xs font-medium text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/[0.1] transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-3.5 py-2 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-medium text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoadingFiles ? 'animate-spin' : ''}`} />
               Refresh Sheets
@@ -621,15 +525,16 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
 
       {/* Live Configured Spreadsheet + Parallel Status Bar */}
       {configuredTarget && (
-        <div className="rounded-xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] px-4 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-slate-600 dark:text-slate-300 min-w-0">
-            <span
-              className={`inline-flex items-center gap-1.5 font-medium ${
-                configuredTarget.parallelSyncEnabled && workspaceToken
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-amber-600 dark:text-amber-300'
-              }`}
-            >
+        <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/40 px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-neutral-600 dark:text-neutral-300 min-w-0">
+            <span className="inline-flex items-center gap-1.5 font-medium text-neutral-950 dark:text-neutral-50">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  configuredTarget.parallelSyncEnabled && workspaceToken
+                    ? 'bg-neutral-950 dark:bg-white'
+                    : 'bg-neutral-400 dark:bg-neutral-600'
+                }`}
+              />
               <ArrowLeftRight className="w-3.5 h-3.5 shrink-0" />
               {configuredTarget.parallelSyncEnabled
                 ? workspaceToken
@@ -639,14 +544,18 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                   : 'Sign in with Google to resume live sync'
                 : 'Manual Sync Only'}
             </span>
-            <span aria-hidden="true">·</span>
-            <span className="truncate font-medium text-[#1D8FE1] dark:text-[#38BDF8]">
+            <span aria-hidden="true" className="text-neutral-400">
+              ·
+            </span>
+            <span className="truncate font-medium text-neutral-950 dark:text-neutral-50 underline underline-offset-4 decoration-neutral-300 dark:decoration-neutral-700">
               {configuredTarget.spreadsheetTitle} ({configuredTarget.tabTitle})
             </span>
             {configuredTarget.lastSyncedAt && (
               <>
-                <span aria-hidden="true">·</span>
-                <span className="font-mono tabular-nums text-slate-500 dark:text-slate-400">
+                <span aria-hidden="true" className="text-neutral-400">
+                  ·
+                </span>
+                <span className="font-mono tabular-nums text-neutral-500 dark:text-neutral-400">
                   {new Date(configuredTarget.lastSyncedAt).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -656,8 +565,10 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
             )}
             {configuredTarget.lastSyncSummary && (
               <>
-                <span aria-hidden="true">·</span>
-                <span className="text-slate-500 dark:text-slate-400">
+                <span aria-hidden="true" className="text-neutral-400">
+                  ·
+                </span>
+                <span className="text-neutral-500 dark:text-neutral-400">
                   {configuredTarget.lastSyncSummary}
                 </span>
               </>
@@ -665,7 +576,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
-            <span className="font-mono tabular-nums text-slate-500 dark:text-slate-400">
+            <span className="font-mono tabular-nums text-neutral-500 dark:text-neutral-400">
               {birthdays.length} synced
               {incompleteRows.length > 0 ? ` + ${incompleteRows.length} pending date` : ''}
             </span>
@@ -673,7 +584,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
               <button
                 type="button"
                 onClick={onPauseParallelSync}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] hover:bg-slate-100 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-200 font-medium cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-800 dark:text-neutral-200 font-medium cursor-pointer"
               >
                 <Pause className="w-3 h-3" />
                 Pause
@@ -690,7 +601,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                     missingColumns,
                   })
                 }
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#1D8FE1] hover:bg-[#197CC6] text-white font-medium cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-neutral-950 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-950 font-medium cursor-pointer"
               >
                 <Play className="w-3 h-3" />
                 Enable Parallel Sync
@@ -701,116 +612,24 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
       )}
 
       {syncError && (
-        <p className="text-xs text-rose-600 dark:text-rose-400">{syncError}</p>
-      )}
-
-      {/* Attached Events Quick-Setup Card */}
-      {attachedEvents && (
-        <div className="rounded-2xl border border-[#1D8FE1]/30 bg-[#1D8FE1]/[0.07] dark:bg-[#1D8FE1]/10 p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-start gap-3.5 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-[#1D8FE1]/15 border border-[#1D8FE1]/30 flex items-center justify-center text-[#1D8FE1] dark:text-[#38BDF8] shrink-0">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-                Attached "Events" Birthday List Ready
-              </h3>
-              <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                Detected{' '}
-                <span className="font-mono font-semibold tabular-nums">
-                  {attachedEvents.entries.length}
-                </span>{' '}
-                birthdays (DD/MM/YYYY parsed) and{' '}
-                <span className="font-mono tabular-nums">
-                  {attachedEvents.incompleteRows.length}
-                </span>{' '}
-                pending-date rows (
-                {attachedEvents.incompleteRows.map((r) => r.name).join(', ')}). Extra
-                columns <span className="font-medium">Circle, Reminder, Note</span> will
-                be included automatically.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {workspaceToken && eventsFileMatch ? (
-              <button
-                type="button"
-                onClick={async () => {
-                  setSelectedFileId(eventsFileMatch.id);
-                  let tabTitle =
-                    selectedFileId === eventsFileMatch.id ? selectedTab : '';
-                  if (!tabTitle) {
-                    try {
-                      const meta = await getSpreadsheetMetadata(
-                        workspaceToken,
-                        eventsFileMatch.id
-                      );
-                      setMetadata(meta);
-                      tabTitle = meta.tabs[0]?.title ?? '';
-                      setSelectedTab(tabTitle);
-                    } catch (err) {
-                      handleApiError(err, 'Unable to read spreadsheet tabs.');
-                      return;
-                    }
-                  }
-                  if (!tabTitle) return;
-                  setPendingAction({
-                    kind: 'enable-parallel',
-                    spreadsheetId: eventsFileMatch.id,
-                    spreadsheetTitle: eventsFileMatch.name,
-                    tabTitle,
-                    missingColumns,
-                  });
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[40px] rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
-              >
-                <ArrowLeftRight className="w-3.5 h-3.5" />
-                Connect Drive "{eventsFileMatch.name}"
-              </button>
-            ) : null}
-
-            {workspaceToken ? (
-              <button
-                type="button"
-                onClick={handleCreateSheetFromAttachedEvents}
-                disabled={isCreatingEventsSheet}
-                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[40px] rounded-xl border border-[#38BDF8]/40 bg-white/80 dark:bg-white/[0.08] hover:bg-white dark:hover:bg-white/[0.14] text-slate-900 dark:text-white text-xs font-medium transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
-              >
-                {isCreatingEventsSheet ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <FilePlus2 className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
-                )}
-                Create "Events" Sheet & Parallel Sync
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleLoadAttachedLocally}
-                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.12] bg-white/80 dark:bg-white/[0.06] hover:bg-white dark:hover:bg-white/[0.12] text-slate-900 dark:text-white text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
-                Load {attachedEvents.entries.length} Birthdays Locally
-              </button>
-            )}
-          </div>
-        </div>
+        <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">
+          {syncError}
+        </p>
       )}
 
       {!workspaceToken ? (
-        <div className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-6 sm:p-8 max-w-2xl">
+        <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 sm:p-8 max-w-2xl">
           <div className="flex items-start gap-4">
-            <div className="w-11 h-11 rounded-2xl bg-[#1D8FE1]/15 border border-[#1D8FE1]/30 flex items-center justify-center text-[#1D8FE1] dark:text-[#38BDF8] shrink-0">
+            <div className="w-10 h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex items-center justify-center text-neutral-900 dark:text-neutral-100 shrink-0">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+              <h3 className="text-base font-semibold text-neutral-950 dark:text-neutral-50">
                 {user
                   ? 'Authorize Google Sheets Access'
                   : 'Connect your Google account for Parallel Sheets Sync'}
               </h3>
-              <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p className="mt-1.5 text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
                 {user
                   ? 'For your privacy, Google Sheets access tokens stay strictly in browser memory and reset on reload. Sign in with Google again to resume two-way parallel updates with your spreadsheet.'
                   : 'Sign in with Google to connect your Events spreadsheet, add the Circle, Reminder, and Note columns, and keep updates flowing in parallel between Google Sheets and Broll.'}
@@ -819,14 +638,14 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
               <div className="mt-5">
                 <button
                   type="button"
-                  onClick={signIn}
-                  className="inline-flex items-center gap-3 px-4 py-2.5 min-h-[44px] rounded-full bg-white text-[#1f1f1f] border border-[#747775]/40 shadow-sm hover:bg-[#f8f9fa] active:bg-[#f1f3f4] text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8]"
+                  onClick={connectWorkspace}
+                  className="inline-flex items-center gap-3 px-4 py-2.5 min-h-[42px] rounded-lg bg-white text-neutral-950 border border-neutral-300 hover:bg-neutral-100 active:bg-neutral-200 text-sm font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
                 >
                   <svg
                     version="1.1"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 48 48"
-                    className="w-5 h-5 shrink-0 block"
+                    className="w-4 h-4 shrink-0 block"
                     aria-hidden="true"
                   >
                     <path
@@ -854,39 +673,39 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Left column: Create new sheet + Browse spreadsheets */}
           <div className="lg:col-span-5 space-y-5">
             <form
               onSubmit={handleCreateNewSheet}
-              className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-5 space-y-4"
+              className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-5 space-y-4"
             >
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
-                <FilePlus2 className="w-4 h-4 text-[#1D8FE1] dark:text-[#38BDF8]" />
+              <div className="flex items-center gap-2 text-sm font-semibold text-neutral-950 dark:text-neutral-50">
+                <FilePlus2 className="w-4 h-4 text-neutral-700 dark:text-neutral-300" />
                 <span>Create New Google Sheet</span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 Create a Google Sheet with{' '}
-                <span className="font-medium text-slate-700 dark:text-slate-200">
+                <span className="font-medium text-neutral-900 dark:text-neutral-200">
                   Sl. No., Names, Date, Event, Circle, Reminder, Note
                 </span>{' '}
                 columns and enable parallel sync for all{' '}
                 <span className="font-mono tabular-nums">{birthdays.length}</span> entries.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-2.5">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={newSheetTitle}
                   onChange={(e) => setNewSheetTitle(e.target.value)}
                   placeholder="Spreadsheet title"
                   aria-label="New spreadsheet title"
-                  className="flex-1 min-h-[42px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#38BDF8]"
+                  className="flex-1 min-h-[40px] px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-xs text-neutral-950 dark:text-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-950 dark:focus:ring-white"
                 />
                 <button
                   type="submit"
                   disabled={isCreatingSheet}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 min-h-[42px] rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 min-h-[40px] rounded-lg bg-neutral-950 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
                 >
                   {isCreatingSheet ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -898,19 +717,19 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
               </div>
             </form>
 
-            <div className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-5 space-y-4">
+            <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-5 space-y-4">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                <h3 className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
                   Your Spreadsheets
                 </h3>
-                <span className="font-mono text-xs tabular-nums text-slate-500 dark:text-slate-400">
+                <span className="font-mono text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
                   {spreadsheets.length} found
                 </span>
               </div>
 
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="search"
                     value={searchTerm}
@@ -923,25 +742,25 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                     }}
                     placeholder="Filter sheets by title..."
                     aria-label="Filter Google Spreadsheets"
-                    className="w-full min-h-[38px] pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#38BDF8]"
+                    className="w-full min-h-[38px] pl-8 pr-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-xs text-neutral-950 dark:text-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-950 dark:focus:ring-white"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => loadSpreadsheets(searchTerm)}
-                  className="px-3 min-h-[38px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] hover:bg-slate-100 dark:hover:bg-white/[0.1] text-xs font-medium text-slate-700 dark:text-slate-200 cursor-pointer"
+                  className="px-3 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-800 dark:text-neutral-200 cursor-pointer"
                 >
                   Search
                 </button>
               </div>
 
               {isLoadingFiles ? (
-                <div className="py-8 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <div className="py-8 flex items-center justify-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Loading spreadsheets from Google Drive...</span>
                 </div>
               ) : spreadsheets.length === 0 ? (
-                <p className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                <p className="py-6 text-center text-xs text-neutral-500 dark:text-neutral-400">
                   No Google Spreadsheets found. Create one above to get started.
                 </p>
               ) : (
@@ -954,10 +773,10 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                         key={file.id}
                         type="button"
                         onClick={() => setSelectedFileId(file.id)}
-                        className={`w-full text-left px-3.5 py-2.5 rounded-xl border transition-colors cursor-pointer ${
+                        className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${
                           isSelected
-                            ? 'border-[#38BDF8] bg-[#1D8FE1]/12 text-slate-900 dark:text-white'
-                            : 'border-slate-200/80 dark:border-white/[0.06] bg-white/50 dark:bg-white/[0.02] hover:bg-slate-100/80 dark:hover:bg-white/[0.06] text-slate-700 dark:text-slate-200'
+                            ? 'border-neutral-950 dark:border-white bg-neutral-950 text-white dark:bg-white dark:text-neutral-950'
+                            : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-neutral-50 dark:hover:bg-neutral-900 text-neutral-800 dark:text-neutral-200'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -966,12 +785,24 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                           </span>
                           <div className="flex items-center gap-2 shrink-0">
                             {isConnectedTarget && (
-                              <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                              <span
+                                className={`text-[10px] font-mono uppercase tracking-wider font-medium ${
+                                  isSelected
+                                    ? 'text-neutral-300 dark:text-neutral-600'
+                                    : 'text-neutral-950 dark:text-neutral-50'
+                                }`}
+                              >
                                 Connected
                               </span>
                             )}
                             {file.modifiedTime && (
-                              <span className="font-mono text-[10px] tabular-nums text-slate-400">
+                              <span
+                                className={`font-mono text-[10px] tabular-nums ${
+                                  isSelected
+                                    ? 'text-neutral-300 dark:text-neutral-600'
+                                    : 'text-neutral-400 dark:text-neutral-500'
+                                }`}
+                              >
                                 {new Date(file.modifiedTime).toLocaleDateString()}
                               </span>
                             )}
@@ -986,22 +817,22 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
           </div>
 
           {/* Right column: Selected Sheet Tab Sync & Preview */}
-          <div className="lg:col-span-7 rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-5 sm:p-6 flex flex-col gap-5">
+          <div className="lg:col-span-7 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-5 sm:p-6 flex flex-col gap-5">
             {!selectedFileId ? (
-              <div className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">
+              <div className="py-16 text-center text-sm text-neutral-500 dark:text-neutral-400">
                 Select a spreadsheet on the left or create a new one to inspect and sync rows.
               </div>
             ) : isLoadingMeta ? (
-              <div className="py-16 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <div className="py-16 flex items-center justify-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Inspecting spreadsheet tabs...</span>
               </div>
             ) : (
               <>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-white/[0.07]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-neutral-200 dark:border-neutral-800">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold text-slate-900 dark:text-white truncate">
+                      <h3 className="text-base font-semibold text-neutral-950 dark:text-neutral-50 truncate">
                         {metadata?.title ?? 'Selected Spreadsheet'}
                       </h3>
                       {metadata?.spreadsheetUrl && (
@@ -1011,13 +842,13 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                           rel="noopener noreferrer"
                           title="Open in Google Sheets"
                           aria-label="Open spreadsheet in Google Sheets"
-                          className="text-[#1D8FE1] dark:text-[#38BDF8] hover:opacity-80 shrink-0"
+                          className="text-neutral-500 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white shrink-0 transition-colors"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       )}
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
                       Connect this tab for two-way parallel updates or add Circle, Reminder & Note columns.
                     </p>
                   </div>
@@ -1026,7 +857,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                       <label
                         htmlFor="sheet-tab-select"
-                        className="text-xs text-slate-500 dark:text-slate-400"
+                        className="text-xs text-neutral-500 dark:text-neutral-400"
                       >
                         Tab:
                       </label>
@@ -1034,7 +865,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                         id="sheet-tab-select"
                         value={selectedTab}
                         onChange={(e) => setSelectedTab(e.target.value)}
-                        className="min-h-[38px] px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#1B2330] text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#38BDF8] cursor-pointer"
+                        className="min-h-[38px] px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-xs font-medium text-neutral-950 dark:text-neutral-50 focus:outline-none focus:ring-2 focus:ring-neutral-950 dark:focus:ring-white cursor-pointer"
                       >
                         {metadata.tabs.map((tab) => (
                           <option key={tab.sheetId} value={tab.title}>
@@ -1048,12 +879,12 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
 
                 {/* Extra Columns Prompt Banner if sheet lacks Circle/Reminder/Note/Broll ID */}
                 {!isLoadingRows && selectedTab && missingColumns.length > 0 && (
-                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                    <div className="flex items-start gap-2.5 text-amber-800 dark:text-amber-200">
-                      <Columns3 className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div className="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-start gap-2.5 text-neutral-700 dark:text-neutral-300">
+                      <Columns3 className="w-4 h-4 shrink-0 mt-0.5 text-neutral-900 dark:text-neutral-100" />
                       <span>
                         This sheet is missing extra columns:{' '}
-                        <span className="font-semibold">
+                        <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                           {missingColumns.join(', ')}
                         </span>
                         . Connecting Parallel Sync adds them cleanly while keeping all existing rows.
@@ -1070,7 +901,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                           missingColumns,
                         })
                       }
-                      className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold whitespace-nowrap shrink-0 cursor-pointer"
+                      className="px-3 py-1.5 rounded-md bg-neutral-950 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-950 font-medium whitespace-nowrap shrink-0 cursor-pointer"
                     >
                       Add Columns & Enable Parallel Sync
                     </button>
@@ -1078,14 +909,14 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                 )}
 
                 {/* Sync Action Buttons */}
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
                   {isCurrentTabParallel ? (
                     <button
                       type="button"
                       onClick={onPauseParallelSync}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer hover:bg-emerald-500/20"
+                      className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-lg border border-neutral-950 dark:border-white bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer hover:opacity-90"
                     >
-                      <ArrowLeftRight className="w-4 h-4" />
+                      <ArrowLeftRight className="w-3.5 h-3.5" />
                       Parallel Sync Active (Pause)
                     </button>
                   ) : (
@@ -1102,9 +933,9 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                         });
                       }}
                       disabled={isLoadingRows || !selectedTab}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-xs font-medium transition-colors whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                      className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-lg bg-neutral-950 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
                     >
-                      <ArrowLeftRight className="w-4 h-4" />
+                      <ArrowLeftRight className="w-3.5 h-3.5" />
                       Enable Parallel Sync
                     </button>
                   )}
@@ -1113,9 +944,9 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                     type="button"
                     onClick={handleImportFromTab}
                     disabled={isLoadingRows || parsedPreview.length === 0}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] hover:bg-slate-100 dark:hover:bg-white/[0.1] text-xs font-medium text-slate-900 dark:text-white transition-colors whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                    className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-xs font-medium text-neutral-950 dark:text-neutral-50 transition-colors whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    <Download className="w-4 h-4 text-[#1D8FE1] dark:text-[#38BDF8]" />
+                    <Download className="w-3.5 h-3.5" />
                     Import {parsedPreview.length > 0 ? `${parsedPreview.length} ` : ''}to Website
                   </button>
 
@@ -1131,9 +962,9 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                       });
                     }}
                     disabled={isLoadingRows || !selectedTab}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] hover:bg-slate-100 dark:hover:bg-white/[0.1] text-xs font-medium text-slate-900 dark:text-white transition-colors whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
+                    className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-xs font-medium text-neutral-950 dark:text-neutral-50 transition-colors whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
                   >
-                    <Upload className="w-4 h-4 text-[#1D8FE1] dark:text-[#38BDF8]" />
+                    <Upload className="w-3.5 h-3.5" />
                     Push {birthdays.length} to This Tab
                   </button>
 
@@ -1141,7 +972,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                     type="button"
                     onClick={() => loadTabValues(selectedFileId, selectedTab)}
                     disabled={isLoadingRows || !selectedTab}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[42px] rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.08] cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-lg text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 cursor-pointer"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isLoadingRows ? 'animate-spin' : ''}`} />
                     Reload Tab
@@ -1149,35 +980,35 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                 </div>
 
                 {statusMessage && (
-                  <p className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                  <p className="flex items-center gap-2 text-xs text-neutral-900 dark:text-neutral-100 font-medium">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
                     <span>{statusMessage}</span>
                   </p>
                 )}
 
                 {errorMessage && (
-                  <p className="text-xs text-rose-600 dark:text-rose-400">
+                  <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">
                     {errorMessage}
                   </p>
                 )}
 
                 {parseNotice && (
-                  <p className="text-xs text-amber-600 dark:text-amber-300">
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400">
                     {parseNotice}
                   </p>
                 )}
 
                 {/* Sheet Preview Table */}
-                <div className="flex-1 min-h-[220px] rounded-xl border border-slate-200/80 dark:border-white/[0.07] overflow-hidden">
+                <div className="flex-1 min-h-[220px] rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
                   {isLoadingRows ? (
-                    <div className="py-12 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <div className="py-12 flex items-center justify-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Reading rows from "{selectedTab}"...</span>
                     </div>
                   ) : parsedPreview.length > 0 ? (
                     <div className="overflow-x-auto max-h-80">
                       <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-100/80 dark:bg-white/[0.04] text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.07]">
+                        <thead className="bg-neutral-50 dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400 border-b border-neutral-200 dark:border-neutral-800">
                           <tr>
                             <th className="py-2.5 px-3 font-medium">Name</th>
                             <th className="py-2.5 px-3 font-medium">Date</th>
@@ -1187,11 +1018,11 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                             <th className="py-2.5 px-3 font-medium">Note</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200/70 dark:divide-white/[0.05]">
+                        <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
                           {parsedPreview.slice(0, 35).map((entry) => (
                             <tr
                               key={entry.id}
-                              className="text-slate-800 dark:text-slate-200"
+                              className="text-neutral-900 dark:text-neutral-100"
                             >
                               <td className="py-2 px-3 font-medium whitespace-nowrap">
                                 {entry.name}
@@ -1199,16 +1030,16 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                               <td className="py-2 px-3 font-mono tabular-nums whitespace-nowrap">
                                 {formatShortDate(entry.month, entry.day)}
                               </td>
-                              <td className="py-2 px-3 font-mono tabular-nums text-slate-500 dark:text-slate-400">
+                              <td className="py-2 px-3 font-mono tabular-nums text-neutral-500 dark:text-neutral-400">
                                 {entry.birthYear ?? '—'}
                               </td>
                               <td className="py-2 px-3 whitespace-nowrap">
                                 {entry.group}
                               </td>
-                              <td className="py-2 px-3 whitespace-nowrap text-slate-500 dark:text-slate-400">
+                              <td className="py-2 px-3 whitespace-nowrap text-neutral-500 dark:text-neutral-400">
                                 {formatReminderLabel(entry.advanceDays)}
                               </td>
-                              <td className="py-2 px-3 text-slate-500 dark:text-slate-400 max-w-[180px] truncate">
+                              <td className="py-2 px-3 text-neutral-500 dark:text-neutral-400 max-w-[180px] truncate">
                                 {entry.note || '—'}
                               </td>
                             </tr>
@@ -1219,9 +1050,9 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                   ) : sheetRows.length > 0 ? (
                     <div className="overflow-x-auto max-h-72">
                       <table className="w-full text-left text-xs">
-                        <tbody className="divide-y divide-slate-200/70 dark:divide-white/[0.05]">
+                        <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800">
                           {sheetRows.slice(0, 12).map((row, idx) => (
-                            <tr key={idx} className="text-slate-700 dark:text-slate-300">
+                            <tr key={idx} className="text-neutral-700 dark:text-neutral-300">
                               {row.slice(0, 6).map((cell, cIdx) => (
                                 <td key={cIdx} className="py-2 px-3 truncate max-w-[160px]">
                                   {cell}
@@ -1233,7 +1064,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                       </table>
                     </div>
                   ) : (
-                    <div className="py-12 text-center text-xs text-slate-500 dark:text-slate-400">
+                    <div className="py-12 text-center text-xs text-neutral-500 dark:text-neutral-400">
                       Tab "{selectedTab}" has no rows yet.
                     </div>
                   )}
@@ -1250,15 +1081,15 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="confirm-sheets-overwrite-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
         >
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-[#19222F] p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+                <AlertTriangle className="w-5 h-5 text-neutral-900 dark:text-neutral-100 shrink-0" />
                 <h3
                   id="confirm-sheets-overwrite-title"
-                  className="text-base font-semibold text-slate-900 dark:text-white"
+                  className="text-base font-semibold text-neutral-950 dark:text-neutral-50"
                 >
                   {pendingAction.kind === 'enable-parallel'
                     ? 'Enable Two-Way Parallel Sync'
@@ -1269,7 +1100,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                 type="button"
                 onClick={() => setPendingAction(null)}
                 aria-label="Close confirmation dialog"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
+                className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1277,21 +1108,21 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
 
             {pendingAction.kind === 'enable-parallel' ? (
               <>
-                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">
                   Connect tab{' '}
-                  <span className="font-semibold text-slate-900 dark:text-white">
+                  <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                     "{pendingAction.tabTitle}"
                   </span>{' '}
                   in{' '}
-                  <span className="font-semibold text-slate-900 dark:text-white">
+                  <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                     "{pendingAction.spreadsheetTitle}"
                   </span>{' '}
                   for automatic two-way parallel updates with Broll?
                 </p>
-                <ul className="mt-3 space-y-1.5 text-xs text-slate-500 dark:text-slate-400 list-disc pl-4">
+                <ul className="mt-3 space-y-1.5 text-xs text-neutral-500 dark:text-neutral-400 list-disc pl-4">
                   <li>
                     Adds{' '}
-                    <span className="font-medium text-slate-700 dark:text-slate-200">
+                    <span className="font-medium text-neutral-900 dark:text-neutral-200">
                       Circle, Reminder, Note, and Broll ID
                     </span>{' '}
                     columns while keeping your existing names, dates, and incomplete rows intact.
@@ -1303,27 +1134,27 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
               </>
             ) : (
               <>
-                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">
                   Push{' '}
-                  <span className="font-mono font-semibold tabular-nums text-slate-900 dark:text-white">
+                  <span className="font-mono font-semibold tabular-nums text-neutral-950 dark:text-neutral-50">
                     {birthdays.length}
                   </span>{' '}
                   {birthdays.length === 1
                     ? 'local birthday entry'
                     : 'local birthday entries'}{' '}
                   to tab{' '}
-                  <span className="font-semibold text-slate-900 dark:text-white">
+                  <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                     "{pendingAction.tabTitle}"
                   </span>{' '}
                   in{' '}
-                  <span className="font-semibold text-slate-900 dark:text-white">
+                  <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                     "{pendingAction.spreadsheetTitle}"
                   </span>
                   ?
                 </p>
-                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
                   Columns will be updated to{' '}
-                  <span className="font-medium text-slate-700 dark:text-slate-200">
+                  <span className="font-medium text-neutral-900 dark:text-neutral-200">
                     Sl. No., Names, Date, Event, Circle, Reminder, Note, Broll ID
                   </span>
                   .
@@ -1336,7 +1167,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                 type="button"
                 onClick={() => setPendingAction(null)}
                 disabled={isSyncingWrite}
-                className="px-4 py-2 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.1] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.08] cursor-pointer"
+                className="px-4 py-2 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-900 cursor-pointer"
               >
                 Cancel
               </button>
@@ -1344,7 +1175,7 @@ export const GoogleSheetsPanel: React.FC<GoogleSheetsPanelProps> = ({
                 type="button"
                 onClick={handleConfirmPendingAction}
                 disabled={isSyncingWrite}
-                className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-xs font-medium cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg bg-neutral-950 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-200 text-white dark:text-neutral-950 text-xs font-medium cursor-pointer disabled:opacity-50"
               >
                 {isSyncingWrite && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 {pendingAction.kind === 'enable-parallel'

@@ -1,22 +1,31 @@
 import React, {useMemo, useState} from 'react';
-import {Check, CheckSquare, Pencil, Plus, Search, Square, Trash2, X} from 'lucide-react';
-import type {ComputedBirthday, RelationshipGroup, SortMode} from '../types/birthday';
+import {Check, CheckSquare, Pencil, Plus, Search, Square, Trash2, User, X} from 'lucide-react';
+import type {
+  ComputedBirthday,
+  RelationshipGroup,
+  SortMode,
+  UpcomingFilter,
+} from '../types/birthday';
 import {
   formatCompactCountdown,
   formatCountdownLabel,
   formatShortDate,
   getCountdownCycleStats,
 } from '../utils/dateMath';
+import {DrivePhoto} from './DrivePhoto';
 
 interface UpcomingListProps {
   birthdays: ComputedBirthday[];
   totalSavedCount: number;
   searchQuery: string;
   onSearchChange: (value: string) => void;
-  groupFilter: 'All' | RelationshipGroup;
-  onGroupFilterChange: (group: 'All' | RelationshipGroup) => void;
+  groupFilter: UpcomingFilter;
+  onGroupFilterChange: (group: UpcomingFilter) => void;
   sortMode: SortMode;
   onSortModeChange: (mode: SortMode) => void;
+  workspaceToken?: string | null;
+  onAuthExpired?: () => void;
+  onOpenProfile?: (entry: ComputedBirthday) => void;
   onEdit: (entry: ComputedBirthday) => void;
   onDelete: (id: string) => void;
   onBulkDelete: (ids: string[]) => Promise<void> | void;
@@ -25,8 +34,9 @@ interface UpcomingListProps {
   onOpenAddModal: () => void;
 }
 
-const FILTER_OPTIONS: ('All' | RelationshipGroup)[] = [
+const FILTER_OPTIONS: UpcomingFilter[] = [
   'All',
+  'Within 30 Days',
   'Family',
   'Friends',
   'Remembrance',
@@ -53,6 +63,9 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
   onGroupFilterChange,
   sortMode,
   onSortModeChange,
+  workspaceToken = null,
+  onAuthExpired,
+  onOpenProfile,
   onEdit,
   onDelete,
   onBulkDelete,
@@ -129,16 +142,16 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
 
     return (
       <div className="mt-7 first:mt-4">
-        <div className="flex items-baseline justify-between pb-2 border-b border-slate-200 dark:border-white/[0.08]">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+        <div className="flex items-baseline justify-between pb-2 border-b border-neutral-200 dark:border-neutral-800">
+          <h3 className="font-display text-sm font-medium text-neutral-950 dark:text-white">
             {title}
           </h3>
-          <span className="font-mono text-xs tabular-nums text-slate-500 dark:text-slate-400">
+          <span className="font-mono text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
             {items.length} {items.length === 1 ? 'person' : 'people'}
           </span>
         </div>
 
-        <ul className="divide-y divide-slate-200/70 dark:divide-white/[0.06]">
+        <ul className="divide-y divide-neutral-200/70 dark:divide-neutral-800/80">
           {items.map((entry) => {
             const isDeleting = confirmDeleteId === entry.id;
             const isSelected = selectedIds.has(entry.id);
@@ -146,13 +159,10 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
             const progressScale = entry.isToday
               ? 1
               : Math.max(0.04, cycleStats.progressRatio);
-            const progressBarColor = entry.isToday
-              ? 'bg-emerald-500 dark:bg-emerald-400'
-              : entry.group === 'Remembrance'
-              ? 'bg-violet-500 dark:bg-[#A78BFA]'
-              : entry.daysUntil <= 7
-              ? 'bg-amber-500 dark:bg-amber-400'
-              : 'bg-[#1D8FE1] dark:bg-[#38BDF8]';
+            const progressBarColor =
+              entry.isToday || entry.daysUntil <= 7
+                ? 'bg-neutral-950 dark:bg-white'
+                : 'bg-neutral-500 dark:bg-neutral-400';
 
             return (
               <li
@@ -160,11 +170,11 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                 onClick={isSelectionMode ? () => toggleSelectRow(entry.id) : undefined}
                 className={`py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group transition-colors ${
                   isSelectionMode
-                    ? 'cursor-pointer hover:bg-slate-100/70 dark:hover:bg-white/[0.04] -mx-2 px-2 rounded-xl'
+                    ? 'cursor-pointer hover:bg-neutral-100/70 dark:hover:bg-neutral-900 -mx-2 px-2 rounded-lg'
                     : ''
                 } ${
                   isSelectionMode && isSelected
-                    ? 'bg-[#1D8FE1]/10 dark:bg-[#1D8FE1]/15'
+                    ? 'bg-neutral-100 dark:bg-neutral-900'
                     : ''
                 }`}
               >
@@ -179,10 +189,10 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                         e.stopPropagation();
                         toggleSelectRow(entry.id);
                       }}
-                      className={`min-h-[44px] min-w-[44px] rounded-xl inline-flex items-center justify-center shrink-0 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8] ${
+                      className={`min-h-[40px] min-w-[40px] rounded-lg inline-flex items-center justify-center shrink-0 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white ${
                         isSelected
-                          ? 'text-[#1D8FE1] dark:text-[#38BDF8]'
-                          : 'text-slate-400 dark:text-slate-500'
+                          ? 'text-neutral-950 dark:text-white'
+                          : 'text-neutral-400 dark:text-neutral-600'
                       }`}
                     >
                       {isSelected ? (
@@ -191,37 +201,75 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                         <Square className="w-5 h-5" />
                       )}
                     </button>
+                  ) : onOpenProfile ? (
+                    <button
+                      type="button"
+                      onClick={() => onOpenProfile(entry)}
+                      title={`Open ${entry.name}'s profile & gallery`}
+                      aria-label={`Open ${entry.name}'s profile`}
+                      className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold shrink-0 border transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white ${
+                        entry.isToday
+                          ? 'bg-neutral-950 text-white border-neutral-950 dark:bg-white dark:text-neutral-950 dark:border-white'
+                          : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
+                      }`}
+                    >
+                      <DrivePhoto
+                        driveFileId={entry.avatarFileId}
+                        fallbackUrl={entry.avatarThumb}
+                        workspaceToken={workspaceToken}
+                        alt={entry.name}
+                        onAuthExpired={onAuthExpired}
+                        fallback={<span>{getInitials(entry.name)}</span>}
+                      />
+                    </button>
                   ) : (
                     <div
                       aria-hidden="true"
-                      className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 border ${
+                      className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold shrink-0 border ${
                         entry.isToday
-                          ? 'bg-[#1D8FE1] text-white border-[#38BDF8]/50'
-                          : 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/[0.08]'
+                          ? 'bg-neutral-950 text-white border-neutral-950 dark:bg-white dark:text-neutral-950 dark:border-white'
+                          : 'bg-neutral-100 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 border-neutral-200 dark:border-neutral-800'
                       }`}
                     >
-                      {getInitials(entry.name)}
+                      <DrivePhoto
+                        driveFileId={entry.avatarFileId}
+                        fallbackUrl={entry.avatarThumb}
+                        workspaceToken={workspaceToken}
+                        alt={entry.name}
+                        onAuthExpired={onAuthExpired}
+                        fallback={<span>{getInitials(entry.name)}</span>}
+                      />
                     </div>
                   )}
 
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-                      <span className="text-sm sm:text-base font-medium text-slate-900 dark:text-white truncate">
-                        {entry.name}
-                      </span>
+                      {onOpenProfile && !isSelectionMode ? (
+                        <button
+                          type="button"
+                          onClick={() => onOpenProfile(entry)}
+                          className="text-sm sm:text-base font-medium text-neutral-950 dark:text-white hover:underline underline-offset-2 truncate text-left cursor-pointer"
+                        >
+                          {entry.name}
+                        </button>
+                      ) : (
+                        <span className="text-sm sm:text-base font-medium text-neutral-950 dark:text-white truncate">
+                          {entry.name}
+                        </span>
+                      )}
                       {entry.isToday && (
-                        <span className="text-xs font-semibold text-[#1D8FE1] dark:text-[#38BDF8]">
+                        <span className="text-[11px] font-mono uppercase tracking-wider font-semibold text-neutral-950 dark:text-white">
                           Today
                         </span>
                       )}
                       {!entry.isToday && entry.daysUntil <= 7 && (
-                        <span className="text-xs font-medium text-amber-600 dark:text-amber-300">
+                        <span className="text-xs font-medium text-neutral-900 dark:text-neutral-100">
                           {formatCountdownLabel(entry.daysUntil)}
                         </span>
                       )}
                     </div>
 
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-neutral-500 dark:text-neutral-400">
                       <span className="tabular-nums">
                         {formatShortDate(entry.month, entry.day)}
                       </span>
@@ -239,12 +287,27 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                       <span
                         className={
                           entry.group === 'Remembrance'
-                            ? 'text-violet-600 dark:text-violet-300 font-medium'
+                            ? 'italic text-neutral-600 dark:text-neutral-300'
                             : undefined
                         }
                       >
                         {entry.group}
                       </span>
+                      {entry.relation && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className="truncate max-w-[140px]">{entry.relation}</span>
+                        </>
+                      )}
+                      {(entry.galleryPhotos?.length ?? 0) > 0 && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className="tabular-nums">
+                            {entry.galleryPhotos?.length}{' '}
+                            {entry.galleryPhotos?.length === 1 ? 'photo' : 'photos'}
+                          </span>
+                        </>
+                      )}
                       <span aria-hidden="true">·</span>
                       <span>
                         {entry.advanceDays === 0
@@ -254,7 +317,7 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                     </div>
 
                     {entry.note && (
-                      <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
+                      <p className="mt-1 text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2">
                         {entry.note}
                       </p>
                     )}
@@ -274,11 +337,9 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                   >
                     <span
                       className={`font-mono text-sm font-medium tabular-nums leading-none ${
-                        entry.isToday
-                          ? 'text-emerald-600 dark:text-emerald-300'
-                          : entry.daysUntil <= 7
-                          ? 'text-amber-600 dark:text-amber-300'
-                          : 'text-slate-600 dark:text-slate-300'
+                        entry.isToday || entry.daysUntil <= 7
+                          ? 'text-neutral-950 dark:text-white font-semibold'
+                          : 'text-neutral-600 dark:text-neutral-400'
                       }`}
                     >
                       {formatCompactCountdown(entry.daysUntil)}
@@ -294,10 +355,10 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                           ? 'Today'
                           : `${cycleStats.remainingDays} days remaining, ${cycleStats.percentComplete} percent elapsed`
                       }
-                      className="mt-1.5 h-1.5 w-16 rounded-full bg-slate-200/80 dark:bg-white/[0.08] overflow-hidden"
+                      className="mt-1.5 h-1.5 w-16 rounded-sm bg-neutral-200 dark:bg-neutral-800 overflow-hidden"
                     >
                       <div
-                        className={`h-full w-full origin-left rounded-full ${progressBarColor} transition-transform duration-300 ease-out motion-reduce:transition-none`}
+                        className={`h-full w-full origin-left ${progressBarColor} transition-transform duration-300 ease-out motion-reduce:transition-none`}
                         style={{transform: `scaleX(${progressScale})`}}
                       />
                     </div>
@@ -326,13 +387,13 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                             ? `Undo wish recorded for ${entry.name}`
                             : `Mark wish sent for ${entry.name}`
                         }
-                        className={`min-h-[40px] min-w-[40px] px-3 rounded-xl inline-flex items-center justify-center gap-1.5 text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8] ${
+                        className={`min-h-[36px] min-w-[36px] px-2.5 rounded-lg border inline-flex items-center justify-center gap-1.5 text-xs font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white ${
                           entry.isCelebratedThisYear
-                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.08] hover:text-slate-900 dark:hover:text-white'
+                            ? 'border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-neutral-950'
+                            : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-950 dark:hover:text-white'
                         }`}
                       >
-                        <Check className="w-4 h-4" />
+                        <Check className="w-3.5 h-3.5" />
                         <span className="hidden lg:inline">
                           {entry.group === 'Remembrance'
                             ? entry.isCelebratedThisYear
@@ -344,13 +405,25 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                         </span>
                       </button>
 
+                      {onOpenProfile && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenProfile(entry)}
+                          title={`Open ${entry.name}'s profile & gallery`}
+                          aria-label={`Profile for ${entry.name}`}
+                          className="min-h-[36px] min-w-[36px] rounded-lg inline-flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-950 dark:hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
+                        >
+                          <User className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => onEdit(entry)}
                         aria-label={`Edit ${entry.name}`}
-                        className="min-h-[40px] min-w-[40px] rounded-xl inline-flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.08] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8]"
+                        className="min-h-[36px] min-w-[36px] rounded-lg inline-flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-950 dark:hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Pencil className="w-3.5 h-3.5" />
                       </button>
 
                       {isDeleting ? (
@@ -361,7 +434,7 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                               onDelete(entry.id);
                               setConfirmDeleteId(null);
                             }}
-                            className="min-h-[40px] px-3 rounded-xl bg-rose-600 text-white text-xs font-medium hover:bg-rose-700 transition-colors cursor-pointer whitespace-nowrap"
+                            className="min-h-[36px] px-3 rounded-lg bg-rose-600 text-white text-xs font-medium hover:bg-rose-700 transition-colors cursor-pointer whitespace-nowrap"
                           >
                             Confirm
                           </button>
@@ -369,7 +442,7 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                             type="button"
                             onClick={() => setConfirmDeleteId(null)}
                             aria-label="Cancel delete"
-                            className="min-h-[40px] min-w-[40px] rounded-xl inline-flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.08] cursor-pointer"
+                            className="min-h-[36px] min-w-[36px] rounded-lg inline-flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 cursor-pointer"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -379,9 +452,9 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                           type="button"
                           onClick={() => setConfirmDeleteId(entry.id)}
                           aria-label={`Delete ${entry.name}`}
-                          className="min-h-[40px] min-w-[40px] rounded-xl inline-flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-rose-500/15 hover:text-rose-500 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+                          className="min-h-[36px] min-w-[36px] rounded-lg inline-flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
@@ -403,27 +476,27 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
   return (
     <section
       aria-label="Birthday list"
-      className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-5 sm:p-6"
+      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-5 sm:p-6"
     >
       {/* Search, group filter tabs, sort, and bulk select toggle */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="relative w-full lg:max-w-xs">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search name or gift note..."
             aria-label="Search birthdays"
-            className="w-full min-h-[42px] pl-10 pr-4 py-2 rounded-full border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#38BDF8]"
+            className="w-full min-h-[38px] pl-9 pr-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-xs text-neutral-950 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:border-neutral-950 dark:focus:border-neutral-300"
           />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div
             role="tablist"
-            aria-label="Filter by circle"
-            className="flex items-center gap-1 p-1 rounded-full bg-slate-200/70 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.07] overflow-x-auto max-w-full"
+            aria-label="Filter upcoming birthdays"
+            className="flex items-center gap-1 p-1 rounded-lg bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 overflow-x-auto max-w-full"
           >
             {FILTER_OPTIONS.map((group) => {
               const active = groupFilter === group;
@@ -434,10 +507,10 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                   role="tab"
                   aria-selected={active}
                   onClick={() => onGroupFilterChange(group)}
-                  className={`px-3 py-1.5 min-h-[34px] rounded-full text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`px-3 py-1 min-h-[30px] rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     active
-                      ? 'bg-[#1D8FE1] text-white'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                   }`}
                 >
                   {group}
@@ -453,15 +526,15 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                 value={sortMode}
                 onChange={(e) => onSortModeChange(e.target.value as SortMode)}
                 aria-label="Sort birthdays"
-                className="min-h-[40px] px-3.5 py-2 rounded-full border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#38BDF8] cursor-pointer"
+                className="min-h-[38px] px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-xs font-medium text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-950 dark:focus:border-neutral-300 cursor-pointer"
               >
-                <option value="soonest" className="bg-white dark:bg-[#1B2330]">
+                <option value="soonest" className="bg-white dark:bg-neutral-900">
                   Sort: Soonest
                 </option>
-                <option value="alphabetical" className="bg-white dark:bg-[#1B2330]">
+                <option value="alphabetical" className="bg-white dark:bg-neutral-900">
                   Sort: Name (A–Z)
                 </option>
-                <option value="month" className="bg-white dark:bg-[#1B2330]">
+                <option value="month" className="bg-white dark:bg-neutral-900">
                   Sort: Month
                 </option>
               </select>
@@ -472,10 +545,10 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                 type="button"
                 onClick={toggleSelectionMode}
                 aria-pressed={isSelectionMode}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 min-h-[40px] rounded-full border text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8] ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[38px] rounded-lg border text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white ${
                   isSelectionMode
-                    ? 'border-[#38BDF8] bg-[#1D8FE1]/15 text-[#1D8FE1] dark:text-[#38BDF8]'
-                    : 'border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.1]'
+                    ? 'border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-neutral-950'
+                    : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                 }`}
               >
                 <CheckSquare className="w-3.5 h-3.5" />
@@ -491,19 +564,19 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
         <div
           role="region"
           aria-label="Bulk actions"
-          className="mt-4 px-4 py-3 rounded-xl border border-[#38BDF8]/30 bg-[#1D8FE1]/10 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+          className="mt-4 px-4 py-3 rounded-lg border border-neutral-950/30 dark:border-white/25 bg-neutral-50 dark:bg-neutral-900 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
         >
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={handleToggleSelectAll}
-              className="px-3 py-1.5 min-h-[38px] rounded-lg border border-slate-200 dark:border-white/[0.1] bg-white/80 dark:bg-white/[0.06] text-xs font-medium text-slate-900 dark:text-white hover:bg-white dark:hover:bg-white/[0.12] transition-colors whitespace-nowrap cursor-pointer"
+              className="px-3 py-1.5 min-h-[36px] rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-medium text-neutral-950 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors whitespace-nowrap cursor-pointer"
             >
               {allVisibleSelected
                 ? 'Deselect All'
                 : `Select All (${birthdays.length})`}
             </button>
-            <span className="font-mono text-xs tabular-nums text-slate-600 dark:text-slate-300">
+            <span className="font-mono text-xs tabular-nums text-neutral-600 dark:text-neutral-400">
               {visibleSelectedIds.length} selected
             </span>
           </div>
@@ -518,7 +591,7 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                 value={targetGroup}
                 disabled={visibleSelectedIds.length === 0}
                 onChange={(e) => setTargetGroup(e.target.value as RelationshipGroup)}
-                className="min-h-[38px] px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] bg-white/80 dark:bg-[#1B2330] text-xs font-medium text-slate-900 dark:text-white disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#38BDF8] cursor-pointer"
+                className="min-h-[36px] px-3 py-1.5 rounded-md border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 text-xs font-medium text-neutral-950 dark:text-white disabled:opacity-50 focus:outline-none cursor-pointer"
               >
                 {RELATIONSHIP_GROUPS.map((g) => (
                   <option key={g} value={g}>
@@ -530,7 +603,7 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                 type="button"
                 disabled={visibleSelectedIds.length === 0}
                 onClick={handleApplyBulkReassign}
-                className="px-3.5 py-2 min-h-[38px] rounded-lg bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-xs font-medium disabled:opacity-40 disabled:pointer-events-none transition-colors whitespace-nowrap cursor-pointer"
+                className="px-3.5 py-1.5 min-h-[36px] rounded-md bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-950 text-xs font-medium disabled:opacity-40 disabled:pointer-events-none transition-colors whitespace-nowrap cursor-pointer"
               >
                 Reassign
               </button>
@@ -541,14 +614,14 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                 <button
                   type="button"
                   onClick={handleConfirmBulkDelete}
-                  className="px-3.5 py-2 min-h-[38px] rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
+                  className="px-3.5 py-1.5 min-h-[36px] rounded-md bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
                 >
                   Confirm Delete ({visibleSelectedIds.length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmBulkDelete(false)}
-                  className="px-3 py-2 min-h-[38px] rounded-lg border border-slate-200 dark:border-white/[0.1] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-white/10 whitespace-nowrap cursor-pointer"
+                  className="px-3 py-1.5 min-h-[36px] rounded-md border border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 whitespace-nowrap cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -558,7 +631,7 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
                 type="button"
                 disabled={visibleSelectedIds.length === 0}
                 onClick={() => setConfirmBulkDelete(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-lg border border-rose-500/30 text-xs font-medium text-rose-500 dark:text-rose-400 hover:bg-rose-500/15 disabled:opacity-40 disabled:pointer-events-none transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 min-h-[36px] rounded-md border border-rose-500/30 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 disabled:opacity-40 disabled:pointer-events-none transition-colors whitespace-nowrap cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Delete Selected
@@ -570,29 +643,29 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
 
       {/* Empty States */}
       {totalSavedCount === 0 ? (
-        <div className="mt-8 py-12 px-6 rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.02] text-center">
-          <h3 className="font-display text-xl font-medium text-slate-900 dark:text-white">
+        <div className="mt-8 py-12 px-6 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-center">
+          <h3 className="font-display text-xl font-medium text-neutral-950 dark:text-white">
             Your birthday book is empty
           </h3>
-          <p className="mt-2 max-w-md mx-auto text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          <p className="mt-2 max-w-md mx-auto text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
             Add birthdays manually whenever someone comes to mind. Everything stays offline in your browser vault.
           </p>
           <button
             type="button"
             onClick={onOpenAddModal}
-            className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-sm font-medium transition-colors cursor-pointer"
+            className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 min-h-[42px] rounded-lg bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-950 text-sm font-medium transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Add First Birthday
           </button>
         </div>
       ) : birthdays.length === 0 ? (
-        <div className="mt-8 py-10 px-6 rounded-2xl border border-slate-200 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.02] text-center">
-          <h3 className="font-display text-lg font-medium text-slate-900 dark:text-white">
+        <div className="mt-8 py-10 px-6 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50 text-center">
+          <h3 className="font-display text-lg font-medium text-neutral-950 dark:text-white">
             No matching birthdays
           </h3>
-          <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-            Try clearing your search term or switching back to All circles.
+          <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+            Try clearing your search term or switching back to the All filter.
           </p>
           <button
             type="button"
@@ -600,7 +673,7 @@ export const UpcomingList: React.FC<UpcomingListProps> = ({
               onSearchChange('');
               onGroupFilterChange('All');
             }}
-            className="mt-5 px-4 py-2 min-h-[42px] rounded-xl border border-slate-200 dark:border-white/[0.08] text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+            className="mt-5 px-4 py-2 min-h-[40px] rounded-lg border border-neutral-200 dark:border-neutral-800 text-sm font-medium text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
           >
             Reset Filters
           </button>

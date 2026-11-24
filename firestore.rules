@@ -60,6 +60,18 @@ service cloud.firestore {
         data.updatedAt is timestamp;
     }
 
+    function isValidGalleryPhoto(photo) {
+      return photo is map &&
+        photo.keys().hasAll(['id', 'name', 'mimeType', 'createdAt']) &&
+        photo.keys().hasOnly(['id', 'driveFileId', 'name', 'mimeType', 'caption', 'createdAt']) &&
+        photo.id is string && photo.id.size() >= 1 && photo.id.size() <= 128 &&
+        (!('driveFileId' in photo) || photo.driveFileId == null || (photo.driveFileId is string && photo.driveFileId.size() <= 128)) &&
+        photo.name is string && photo.name.size() >= 1 && photo.name.size() <= 160 &&
+        photo.mimeType is string && photo.mimeType.size() >= 1 && photo.mimeType.size() <= 80 &&
+        (!('caption' in photo) || photo.caption == null || (photo.caption is string && photo.caption.size() <= 200)) &&
+        photo.createdAt is string && photo.createdAt.size() <= 40;
+    }
+
     function isValidBirthday(data, userId, birthdayId) {
       return data.keys().hasAll([
           'id', 'ownerId', 'name', 'month', 'day',
@@ -67,7 +79,10 @@ service cloud.firestore {
         ]) &&
         data.keys().hasOnly([
           'id', 'ownerId', 'name', 'month', 'day', 'birthYear',
-          'group', 'note', 'advanceDays', 'celebratedYears', 'createdAt', 'updatedAt'
+          'group', 'note', 'advanceDays', 'celebratedYears',
+          'phone', 'email', 'relation', 'favoriteThings',
+          'avatarFileId', 'avatarThumb', 'galleryPhotos',
+          'createdAt', 'updatedAt'
         ]) &&
         data.id is string && data.id == birthdayId && isValidId(data.id) &&
         data.ownerId is string && data.ownerId == userId &&
@@ -80,6 +95,20 @@ service cloud.firestore {
         isValidAdvanceDays(data.advanceDays) &&
         data.celebratedYears is list && data.celebratedYears.size() <= 100 &&
         (data.celebratedYears.size() == 0 || data.celebratedYears[0] is int) &&
+        (!('phone' in data) || data.phone == null || (data.phone is string && data.phone.size() <= 40)) &&
+        (!('email' in data) || data.email == null || (data.email is string && data.email.size() <= 160)) &&
+        (!('relation' in data) || data.relation == null || (data.relation is string && data.relation.size() <= 60)) &&
+        (!('favoriteThings' in data) || data.favoriteThings == null || (data.favoriteThings is string && data.favoriteThings.size() <= 280)) &&
+        (!('avatarFileId' in data) || data.avatarFileId == null || (data.avatarFileId is string && data.avatarFileId.size() <= 128)) &&
+        (!('avatarThumb' in data) || data.avatarThumb == null || (data.avatarThumb is string && data.avatarThumb.size() <= 45000)) &&
+        (!('galleryPhotos' in data) || (
+          data.galleryPhotos is list &&
+          data.galleryPhotos.size() <= 50 &&
+          (data.galleryPhotos.size() == 0 || (
+            isValidGalleryPhoto(data.galleryPhotos[0]) &&
+            isValidGalleryPhoto(data.galleryPhotos[data.galleryPhotos.size() - 1])
+          ))
+        )) &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
     }
@@ -142,7 +171,10 @@ service cloud.firestore {
           (
             incoming().diff(existing()).affectedKeys().hasOnly([
               'name', 'month', 'day', 'birthYear', 'group',
-              'note', 'advanceDays', 'celebratedYears', 'updatedAt'
+              'note', 'advanceDays', 'celebratedYears',
+              'phone', 'email', 'relation', 'favoriteThings',
+              'avatarFileId', 'avatarThumb', 'galleryPhotos',
+              'updatedAt'
             ])
           );
         allow delete: if isValidId(userId) &&

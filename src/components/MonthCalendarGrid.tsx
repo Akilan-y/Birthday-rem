@@ -29,20 +29,20 @@ export const MonthCalendarGrid: React.FC<MonthCalendarGridProps> = ({
           return (
             <div
               key={monthName}
-              className={`rounded-2xl border p-5 transition-colors ${
+              className={`rounded-xl border p-5 transition-colors ${
                 isCurrent
-                  ? 'border-[#38BDF8]/50 bg-[#1D8FE1]/10'
-                  : 'border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03]'
+                  ? 'border-neutral-950 dark:border-white bg-neutral-50 dark:bg-neutral-900'
+                  : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950'
               }`}
             >
-              <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-white/[0.07]">
+              <div className="flex items-center justify-between gap-2 pb-3 border-b border-neutral-200 dark:border-neutral-800">
                 <div className="flex items-baseline gap-2">
-                  <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+                  <h3 className="font-display text-base font-medium text-neutral-950 dark:text-white">
                     {monthName}
                   </h3>
                   {isCurrent && (
-                    <span className="text-xs font-medium text-[#1D8FE1] dark:text-[#38BDF8]">
-                      Current
+                    <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-neutral-950 dark:text-white">
+                      Now
                     </span>
                   )}
                 </div>
@@ -50,34 +50,34 @@ export const MonthCalendarGrid: React.FC<MonthCalendarGridProps> = ({
                   type="button"
                   onClick={() => onAddForMonth(monthNum)}
                   aria-label={`Add birthday in ${monthName}`}
-                  className="min-h-[36px] min-w-[36px] rounded-full inline-flex items-center justify-center text-slate-500 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-white/[0.1] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                  className="min-h-[32px] min-w-[32px] rounded-md inline-flex items-center justify-center text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-neutral-800 hover:text-neutral-950 dark:hover:text-white transition-colors cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
 
               {items.length === 0 ? (
-                <p className="py-5 text-xs text-slate-400 dark:text-slate-500">
+                <p className="py-5 text-xs text-neutral-400 dark:text-neutral-600">
                   No birthdays recorded
                 </p>
               ) : (
-                <ul className="mt-3 divide-y divide-slate-200/60 dark:divide-white/[0.05]">
+                <ul className="mt-3 divide-y divide-neutral-200/70 dark:divide-neutral-800/80">
                   {items.map((entry) => (
                     <li key={entry.id}>
                       <button
                         type="button"
                         onClick={() => onEdit(entry)}
-                        className="w-full py-2.5 min-h-[42px] flex items-center justify-between gap-3 text-left hover:bg-slate-100/70 dark:hover:bg-white/[0.05] -mx-2 px-2 rounded-lg transition-colors cursor-pointer"
+                        className="w-full py-2.5 min-h-[40px] flex items-center justify-between gap-3 text-left hover:bg-neutral-100 dark:hover:bg-neutral-900 -mx-2 px-2 rounded-md transition-colors cursor-pointer"
                       >
                         <div className="flex items-baseline gap-3 min-w-0">
-                          <span className="font-mono text-xs tabular-nums text-slate-400 w-5 shrink-0">
+                          <span className="font-mono text-xs tabular-nums text-neutral-400 dark:text-neutral-500 w-5 shrink-0">
                             {String(entry.day).padStart(2, '0')}
                           </span>
-                          <span className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                          <span className="text-sm font-medium text-neutral-950 dark:text-white truncate">
                             {entry.name}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 shrink-0">
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400 shrink-0 tabular-nums">
                           {entry.turningAge !== null ? `Age ${entry.turningAge}` : entry.group}
                         </span>
                       </button>

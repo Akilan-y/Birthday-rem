@@ -1,7 +1,6 @@
 import type {BirthdayEntry} from '../types/birthday';
 import {
   buildBirthdayTableRows,
-  parseCsvRows,
   parseTableRowsToBirthdaysDetailed,
   type SheetIncompleteRow,
 } from './localStorageVault';
@@ -50,7 +49,6 @@ export interface ConfiguredSheetTarget {
   lastSyncSummary?: string;
 }
 
-export const ATTACHED_EVENTS_PATH = '/assets/aistudio/Events_8ec13040';
 const LS_SHEETS_CONFIG_KEY = 'broll_sheets_config_v1';
 
 export function loadConfiguredTarget(): ConfiguredSheetTarget | null {
@@ -348,21 +346,4 @@ export async function writeBirthdaysToSheetTab(
   );
 
   return birthdays.length;
-}
-
-export async function loadAttachedEventsSheet(): Promise<{
-  entries: BirthdayEntry[];
-  incompleteRows: SheetIncompleteRow[];
-}> {
-  const res = await fetch(ATTACHED_EVENTS_PATH);
-  if (!res.ok) {
-    throw new Error('Unable to load the attached Events file.');
-  }
-  const text = await res.text();
-  const rows = parseCsvRows(text);
-  const parsed = parseTableRowsToBirthdaysDetailed(rows);
-  return {
-    entries: parsed.entries,
-    incompleteRows: parsed.incompleteRows,
-  };
 }

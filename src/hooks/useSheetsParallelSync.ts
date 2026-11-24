@@ -19,6 +19,25 @@ const PUSH_DEBOUNCE_MS = 700;
 
 export type ParallelSyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
+function mergeSheetEntryWithLocal(
+  sheetEntry: BirthdayEntry,
+  localEntry: BirthdayEntry
+): BirthdayEntry {
+  return {
+    ...sheetEntry,
+    id: localEntry.id,
+    celebratedYears: localEntry.celebratedYears,
+    createdAt: localEntry.createdAt,
+    phone: localEntry.phone,
+    email: localEntry.email,
+    relation: localEntry.relation,
+    favoriteThings: localEntry.favoriteThings,
+    avatarFileId: localEntry.avatarFileId,
+    avatarThumb: localEntry.avatarThumb,
+    galleryPhotos: localEntry.galleryPhotos,
+  };
+}
+
 function loadSavedIncompleteRows(): SheetIncompleteRow[] {
   try {
     const raw = localStorage.getItem(LS_INCOMPLETE_ROWS_KEY);
@@ -176,12 +195,7 @@ export function useSheetsParallelSync({
           if (byNameDate && !matchedLocalIds.has(byNameDate.id)) {
             matchedLocalIds.add(byNameDate.id);
             sheetNeedsIdBackfill = true;
-            return {
-              ...sheetEntry,
-              id: byNameDate.id,
-              celebratedYears: byNameDate.celebratedYears,
-              createdAt: byNameDate.createdAt,
-            };
+            return mergeSheetEntryWithLocal(sheetEntry, byNameDate);
           }
           sheetNeedsIdBackfill = true;
           return sheetEntry;
@@ -210,7 +224,7 @@ export function useSheetsParallelSync({
             } else {
               // If sheet lacked Circle/Reminder/Note columns, keep local custom fields
               const mergedItem: BirthdayEntry = {
-                ...sheetItem,
+                ...mergeSheetEntryWithLocal(sheetItem, localItem),
                 group: sheetRead.missingExtraColumns.includes('Circle')
                   ? localItem.group
                   : sheetItem.group,
@@ -220,8 +234,6 @@ export function useSheetsParallelSync({
                 note: sheetRead.missingExtraColumns.includes('Note')
                   ? localItem.note
                   : sheetItem.note || localItem.note,
-                celebratedYears: localItem.celebratedYears,
-                createdAt: localItem.createdAt,
               };
               merged.push(mergedItem);
               if (canonicalEntrySignature(mergedItem) !== canonicalEntrySignature(localItem)) {
@@ -259,21 +271,13 @@ export function useSheetsParallelSync({
                 changedLocally = true;
               } else if (localSig === baseSig) {
                 // Only Google Sheet changed
-                merged.push({
-                  ...sheetItem,
-                  celebratedYears: localItem.celebratedYears,
-                  createdAt: localItem.createdAt,
-                });
+                merged.push(mergeSheetEntryWithLocal(sheetItem, localItem));
                 updatedFromSheet += 1;
               } else if (mode === 'push') {
                 merged.push(localItem);
                 changedLocally = true;
               } else {
-                merged.push({
-                  ...sheetItem,
-                  celebratedYears: localItem.celebratedYears,
-                  createdAt: localItem.createdAt,
-                });
+                merged.push(mergeSheetEntryWithLocal(sheetItem, localItem));
                 updatedFromSheet += 1;
               }
             } else if (localItem && !sheetItem) {

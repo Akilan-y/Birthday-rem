@@ -3,7 +3,9 @@ import {onAuthStateChanged, type User} from 'firebase/auth';
 import {
   auth,
   clearCachedAccessToken,
+  formatGoogleAuthError,
   getCachedAccessToken,
+  signInBasicWithGoogle,
   signInWithGoogle,
   signOutUser,
 } from '../firebase';
@@ -16,7 +18,9 @@ interface FirebaseContextValue {
   authError: string | null;
   workspaceToken: string | null;
   signIn: () => Promise<void>;
+  connectWorkspace: () => Promise<void>;
   signOut: () => Promise<void>;
+  clearAuthError: () => void;
   invalidateWorkspaceToken: () => void;
 }
 
@@ -49,9 +53,7 @@ export const FirebaseProvider: React.FC<{children: React.ReactNode}> = ({childre
         setAuthError(null);
       } catch (err) {
         setProfileReady(false);
-        setAuthError(
-          err instanceof Error ? err.message : 'Unable to verify cloud profile.'
-        );
+        setAuthError(formatGoogleAuthError(err));
       }
     });
 
@@ -61,12 +63,19 @@ export const FirebaseProvider: React.FC<{children: React.ReactNode}> = ({childre
   const handleSignIn = useCallback(async () => {
     setAuthError(null);
     try {
+      await signInBasicWithGoogle();
+    } catch (err) {
+      setAuthError(formatGoogleAuthError(err));
+    }
+  }, []);
+
+  const handleConnectWorkspace = useCallback(async () => {
+    setAuthError(null);
+    try {
       const token = await signInWithGoogle();
       setWorkspaceToken(token);
     } catch (err) {
-      setAuthError(
-        err instanceof Error ? err.message : 'Google sign-in was cancelled or failed.'
-      );
+      setAuthError(formatGoogleAuthError(err));
     }
   }, []);
 
@@ -76,6 +85,10 @@ export const FirebaseProvider: React.FC<{children: React.ReactNode}> = ({childre
     clearCachedAccessToken();
     setWorkspaceToken(null);
     await signOutUser();
+  }, []);
+
+  const clearAuthError = useCallback(() => {
+    setAuthError(null);
   }, []);
 
   const invalidateWorkspaceToken = useCallback(() => {
@@ -92,7 +105,9 @@ export const FirebaseProvider: React.FC<{children: React.ReactNode}> = ({childre
         authError,
         workspaceToken,
         signIn: handleSignIn,
+        connectWorkspace: handleConnectWorkspace,
         signOut: handleSignOut,
+        clearAuthError,
         invalidateWorkspaceToken,
       }}
     >

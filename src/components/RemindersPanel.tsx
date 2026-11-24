@@ -82,9 +82,9 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
     }
 
     const ok = await dispatchLocalNotification(
-      'Linden Local Reminder Test',
+      'Broll Local Reminder Test',
       'Your device will show birthday reminders locally with zero server involvement.',
-      `linden-test-${Date.now()}`
+      `broll-test-${Date.now()}`
     );
 
     if (ok) {
@@ -116,11 +116,11 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
 
   return (
     <section aria-label="Local notifications" className="space-y-6">
-      <div className="pb-4 border-b border-slate-200 dark:border-white/[0.07]">
-        <h2 className="font-display text-2xl font-medium text-slate-900 dark:text-white">
+      <div className="pb-4 border-b border-neutral-200 dark:border-neutral-800">
+        <h2 className="font-display text-2xl font-medium text-neutral-950 dark:text-white">
           Local Notifications
         </h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400 max-w-2xl">
           Alerts are evaluated strictly on your device using the browser Notification API and local Service Worker. Nothing is sent to external push servers.
         </p>
       </div>
@@ -128,20 +128,20 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Controls */}
         <div className="lg:col-span-7 space-y-5">
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-6">
+          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <h3 className="text-base font-semibold text-neutral-950 dark:text-white flex items-center gap-2">
                   {settings.enabled && permission === 'granted' ? (
-                    <Bell className="w-4 h-4 text-[#1D8FE1] dark:text-[#38BDF8]" />
+                    <Bell className="w-4 h-4 text-neutral-950 dark:text-white" />
                   ) : (
-                    <BellOff className="w-4 h-4 text-slate-400" />
+                    <BellOff className="w-4 h-4 text-neutral-400" />
                   )}
                   On-Device Birthday Alerts
                 </h3>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                   Browser permission:{' '}
-                  <span className="font-medium text-slate-900 dark:text-white">
+                  <span className="font-medium text-neutral-950 dark:text-white">
                     {permissionLabel}
                   </span>
                 </p>
@@ -150,10 +150,10 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
               <button
                 type="button"
                 onClick={handleToggleEnabled}
-                className={`px-4 py-2 min-h-[42px] rounded-xl text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-4 py-2 min-h-[38px] rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   settings.enabled && permission === 'granted'
-                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-                    : 'bg-[#1D8FE1] hover:bg-[#197CC6] text-white'
+                    ? 'border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-neutral-950 dark:text-white hover:bg-neutral-200 dark:hover:bg-neutral-800'
+                    : 'border-neutral-950 bg-neutral-950 text-white hover:bg-neutral-800 dark:border-white dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200'
                 }`}
               >
                 {settings.enabled && permission === 'granted'
@@ -162,9 +162,9 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
               </button>
             </div>
 
-            <div className="mt-6 pt-5 border-t border-slate-200 dark:border-white/[0.06] grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="mt-6 pt-5 border-t border-neutral-200 dark:border-neutral-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <label className="block">
-                <span className="block text-xs font-medium text-slate-600 dark:text-slate-300">
+                <span className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
                   Preferred Alert Time
                 </span>
                 <input
@@ -173,12 +173,12 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({...settings, dailyHour: e.target.value || '09:00'})
                   }
-                  className="mt-2 w-full min-h-[42px] px-3 py-2 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] text-sm font-mono tabular-nums text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#38BDF8]"
+                  className="mt-2 w-full min-h-[40px] px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-sm font-mono tabular-nums text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-950 dark:focus:border-neutral-300"
                 />
               </label>
 
               <label className="block">
-                <span className="block text-xs font-medium text-slate-600 dark:text-slate-300">
+                <span className="block text-xs font-medium text-neutral-600 dark:text-neutral-400">
                   Default Lead Time (New Entries)
                 </span>
                 <select
@@ -189,13 +189,13 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
                       defaultAdvanceDays: Number(e.target.value) as AdvanceNoticeDays,
                     })
                   }
-                  className="mt-2 w-full min-h-[42px] px-3 py-2 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#38BDF8] cursor-pointer"
+                  className="mt-2 w-full min-h-[40px] px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-sm text-neutral-950 dark:text-white focus:outline-none focus:border-neutral-950 dark:focus:border-neutral-300 cursor-pointer"
                 >
                   {ADVANCE_OPTIONS.map((opt) => (
                     <option
                       key={opt.value}
                       value={opt.value}
-                      className="bg-white dark:bg-[#1B2330]"
+                      className="bg-white dark:bg-neutral-900"
                     >
                       {opt.label}
                     </option>
@@ -204,22 +204,22 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
               </label>
             </div>
 
-            <div className="mt-5 pt-5 border-t border-slate-200 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Check that your device allows local notifications from Linden.
+            <div className="mt-5 pt-5 border-t border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Check that your device allows local notifications from Broll.
               </p>
               <button
                 type="button"
                 onClick={handleSendTest}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 min-h-[42px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] hover:bg-slate-100 dark:hover:bg-white/[0.1] text-xs font-medium text-slate-900 dark:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-950 dark:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <Send className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+                <Send className="w-3.5 h-3.5" />
                 Send Test Notification
               </button>
             </div>
 
             {testFeedback && (
-              <p className="mt-4 text-xs text-[#1D8FE1] dark:text-[#38BDF8] flex items-center gap-2">
+              <p className="mt-4 text-xs text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{testFeedback}</span>
               </p>
@@ -227,16 +227,16 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
           </div>
 
           {/* Local Trigger Log */}
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-6">
-            <div className="flex items-center justify-between gap-4 pb-3 border-b border-slate-200 dark:border-white/[0.06]">
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
+            <div className="flex items-center justify-between gap-4 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+              <h3 className="text-base font-semibold text-neutral-950 dark:text-white">
                 Recent Local Alerts
               </h3>
               {logs.length > 0 && (
                 <button
                   type="button"
                   onClick={onClearLogs}
-                  className="text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                  className="text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white cursor-pointer"
                 >
                   Clear Log
                 </button>
@@ -244,20 +244,20 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
             </div>
 
             {logs.length === 0 ? (
-              <p className="py-6 text-sm text-slate-500 dark:text-slate-400">
+              <p className="py-6 text-sm text-neutral-500 dark:text-neutral-400">
                 No local notifications have fired yet on this device.
               </p>
             ) : (
-              <ul className="divide-y divide-slate-200/70 dark:divide-white/[0.06]">
+              <ul className="divide-y divide-neutral-200/70 dark:divide-neutral-800/80">
                 {logs.slice(0, 8).map((item) => (
                   <li key={item.id} className="py-3 flex items-baseline justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                      <p className="text-sm font-medium text-neutral-950 dark:text-white truncate">
                         {item.personName}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{item.message}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.message}</p>
                     </div>
-                    <time className="font-mono text-xs tabular-nums text-slate-500 dark:text-slate-400 shrink-0">
+                    <time className="font-mono text-xs tabular-nums text-neutral-500 dark:text-neutral-400 shrink-0">
                       {new Date(item.triggeredAt).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -272,23 +272,23 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
 
         {/* Right: Upcoming Schedule Preview */}
         <div className="lg:col-span-5">
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-6">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white pb-3 border-b border-slate-200 dark:border-white/[0.06]">
+          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
+            <h3 className="text-base font-semibold text-neutral-950 dark:text-white pb-3 border-b border-neutral-200 dark:border-neutral-800">
               Next 30 Days Schedule
             </h3>
             {upcomingSchedule.length === 0 ? (
-              <p className="py-6 text-sm text-slate-500 dark:text-slate-400">
+              <p className="py-6 text-sm text-neutral-500 dark:text-neutral-400">
                 No birthdays scheduled within the next 30 days.
               </p>
             ) : (
-              <ul className="divide-y divide-slate-200/70 dark:divide-white/[0.06]">
+              <ul className="divide-y divide-neutral-200/70 dark:divide-neutral-800/80">
                 {upcomingSchedule.map((item) => (
                   <li key={item.id} className="py-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                      <p className="text-sm font-medium text-neutral-950 dark:text-white truncate">
                         {item.name}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
                         {formatShortDate(item.month, item.day)}
                         <span aria-hidden="true"> · </span>
                         {item.advanceDays === 0
@@ -296,14 +296,14 @@ export const RemindersPanel: React.FC<RemindersPanelProps> = ({
                           : `Alert ${item.advanceDays}d before at ${settings.dailyHour}`}
                       </p>
                     </div>
-                    <span className="font-mono text-xs tabular-nums text-[#1D8FE1] dark:text-[#38BDF8] shrink-0">
+                    <span className="font-mono text-xs font-medium tabular-nums text-neutral-950 dark:text-white shrink-0">
                       {item.daysUntil === 0 ? 'Today' : `${item.daysUntil}d`}
                     </span>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="mt-4 pt-4 border-t border-slate-200 dark:border-white/[0.06] text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            <p className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800 text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
               Tip: Export an offline <span className="font-mono">.ics</span> file from the Vault to sync recurring yearly reminders into your native OS calendar.
             </p>
           </div>

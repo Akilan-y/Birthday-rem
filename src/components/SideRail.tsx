@@ -3,6 +3,7 @@ import {
   Bell,
   Calendar,
   FileSpreadsheet,
+  Images,
   LayoutGrid,
   Leaf,
   MessageSquare,
@@ -28,6 +29,7 @@ const RAIL_ITEMS: {
   Icon: React.FC<{className?: string}>;
 }[] = [
   {id: 'upcoming', label: 'Upcoming & Bulk Edit', Icon: LayoutGrid},
+  {id: 'gallery', label: 'People & Gallery', Icon: Images},
   {id: 'calendar', label: 'Calendar Agenda', Icon: Calendar},
   {id: 'statistics', label: 'Statistics', Icon: PieChart},
   {id: 'assistant', label: 'Celebration Assistant', Icon: MessageSquare},
@@ -46,24 +48,21 @@ export const SideRail: React.FC<SideRailProps> = ({
   return (
     <aside
       aria-label="Workspace navigation"
-      className="hidden md:flex flex-col items-center justify-between w-16 shrink-0 py-6 border-r border-slate-200/80 dark:border-white/[0.06]"
+      className="hidden md:flex md:sticky md:top-0 md:h-screen flex-col items-center justify-between w-16 shrink-0 py-5 bg-neutral-50/70 dark:bg-neutral-950 border-r border-neutral-200 dark:border-neutral-800"
     >
-      {/* Top Brand Emblem */}
+      {/* Top Brand Mark */}
       <button
         type="button"
         onClick={() => onSelectView('calendar')}
         title="Broll — Offline Birthday Reminder"
         aria-label="Broll Home"
-        className="w-10 h-10 rounded-xl bg-[#1D8FE1]/15 dark:bg-[#1D8FE1]/20 border border-[#1D8FE1]/30 flex items-center justify-center text-[#1D8FE1] dark:text-[#38BDF8] hover:bg-[#1D8FE1]/25 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8]"
+        className="w-10 h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-center text-neutral-950 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
       >
-        <Leaf className="w-5 h-5" />
+        <Leaf className="w-4 h-4" />
       </button>
 
-      {/* Center Vertical Navigation Dock */}
-      <nav
-        aria-label="Primary views"
-        className="flex flex-col items-center gap-2.5 p-1.5 rounded-full bg-slate-200/60 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.07]"
-      >
+      {/* Center Navigation Stack */}
+      <nav aria-label="Primary views" className="flex flex-col items-center gap-1.5">
         {RAIL_ITEMS.map(({id, label, Icon}) => {
           const isActive = activeView === id;
           return (
@@ -74,10 +73,10 @@ export const SideRail: React.FC<SideRailProps> = ({
               title={label}
               aria-label={label}
               aria-current={isActive ? 'page' : undefined}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8] ${
+              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white ${
                 isActive
-                  ? 'bg-[#1D8FE1] text-white shadow-[0_6px_18px_rgba(29,143,225,0.45)]'
-                  : 'bg-white/70 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.12] hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-neutral-900 hover:text-neutral-950 dark:hover:text-white'
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -86,14 +85,14 @@ export const SideRail: React.FC<SideRailProps> = ({
         })}
       </nav>
 
-      {/* Bottom Utility Dock */}
-      <div className="flex flex-col items-center gap-2.5 p-1.5 rounded-full bg-slate-200/60 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.07]">
+      {/* Bottom Utility Actions */}
+      <div className="flex flex-col items-center gap-1.5">
         <button
           type="button"
           onClick={onOpenAddModal}
           title="Add Birthday"
           aria-label="Add Birthday"
-          className="w-10 h-10 rounded-full bg-white/70 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 hover:bg-[#1D8FE1] hover:text-white transition-colors flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8]"
+          className="w-10 h-10 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-950 hover:text-white hover:border-neutral-950 dark:hover:bg-white dark:hover:text-neutral-950 dark:hover:border-white transition-colors flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -103,13 +102,9 @@ export const SideRail: React.FC<SideRailProps> = ({
           onClick={onToggleDarkMode}
           title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          className="w-10 h-10 rounded-full bg-white/70 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.12] hover:text-slate-900 dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8]"
+          className="w-10 h-10 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200/70 dark:hover:bg-neutral-900 hover:text-neutral-950 dark:hover:text-white transition-colors flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
         >
-          {isDarkMode ? (
-            <Sun className="w-4 h-4 text-amber-300" />
-          ) : (
-            <Moon className="w-4 h-4 text-[#1D8FE1]" />
-          )}
+          {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
       </div>
     </aside>

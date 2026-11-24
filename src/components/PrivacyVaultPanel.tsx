@@ -186,21 +186,21 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
 
   return (
     <section aria-label="Privacy and offline vault" className="space-y-6">
-      <div className="pb-4 border-b border-slate-200 dark:border-white/[0.07] flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div className="pb-4 border-b border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-medium text-slate-900 dark:text-white">
+          <h2 className="font-display text-2xl font-medium text-neutral-950 dark:text-white">
             Privacy & Sync Vault
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400 max-w-2xl">
             Broll keeps all birthday entries locally on your device in IndexedDB with zero analytics. Sign in with Google whenever you want private cross-device cloud sync via Firebase.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={handleExportAllData}
-            className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-xs font-medium shadow-[0_6px_16px_rgba(29,143,225,0.3)] transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8]"
+            className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-950 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
           >
             <Download className="w-3.5 h-3.5" />
             Export All Data
@@ -209,17 +209,17 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
           <button
             type="button"
             onClick={onToggleDarkMode}
-            className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white/80 dark:bg-white/[0.05] text-xs font-medium text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/[0.1] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-xs font-medium text-neutral-950 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             {isDarkMode ? (
               <>
-                <Sun className="w-3.5 h-3.5 text-amber-300" />
+                <Sun className="w-3.5 h-3.5" />
                 Light Mode
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-[#1D8FE1]" />
-                Midnight Slate
+                <Moon className="w-3.5 h-3.5" />
+                Dark Mode
               </>
             )}
           </button>
@@ -228,53 +228,53 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Privacy Guarantee Summary */}
-        <div className="lg:col-span-5 rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-6 space-y-5">
+        <div className="lg:col-span-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 space-y-5">
           <div>
-            <div className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
-              <ShieldCheck className="w-5 h-5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+            <div className="flex items-center gap-2 text-base font-semibold text-neutral-950 dark:text-white">
+              <ShieldCheck className="w-5 h-5" />
               <span>Zero-Tracking Architecture</span>
             </div>
 
-            <dl className="mt-5 divide-y divide-slate-200/70 dark:divide-white/[0.06] text-sm">
+            <dl className="mt-5 divide-y divide-neutral-200/70 dark:divide-neutral-800/80 text-sm">
               <div className="py-3 flex items-center justify-between gap-4">
-                <dt className="text-slate-500 dark:text-slate-400">Storage Engine</dt>
-                <dd className="font-mono text-xs text-slate-900 dark:text-white text-right">
+                <dt className="text-neutral-500 dark:text-neutral-400">Storage Engine</dt>
+                <dd className="font-mono text-xs text-neutral-950 dark:text-white text-right">
                   {isCloudSynced ? 'Firebase + Local Cache' : 'IndexedDB + LocalStorage'}
                 </dd>
               </div>
               <div className="py-3 flex items-center justify-between gap-4">
-                <dt className="text-slate-500 dark:text-slate-400">Vault Footprint</dt>
-                <dd className="font-mono text-xs tabular-nums text-slate-900 dark:text-white">
+                <dt className="text-neutral-500 dark:text-neutral-400">Vault Footprint</dt>
+                <dd className="font-mono text-xs tabular-nums text-neutral-950 dark:text-white">
                   {formattedBytes}
                 </dd>
               </div>
               <div className="py-3 flex items-center justify-between gap-4">
-                <dt className="text-slate-500 dark:text-slate-400">Saved Entries</dt>
-                <dd className="font-mono text-xs tabular-nums text-slate-900 dark:text-white">
+                <dt className="text-neutral-500 dark:text-neutral-400">Saved Entries</dt>
+                <dd className="font-mono text-xs tabular-nums text-neutral-950 dark:text-white">
                   {birthdays.length}
                 </dd>
               </div>
               <div className="py-3 flex items-center justify-between gap-4">
-                <dt className="text-slate-500 dark:text-slate-400">Bundled Fonts & Assets</dt>
-                <dd className="font-mono text-xs text-emerald-600 dark:text-emerald-400">
+                <dt className="text-neutral-500 dark:text-neutral-400">Bundled Fonts & Assets</dt>
+                <dd className="font-mono text-xs text-neutral-950 dark:text-white">
                   100% Local (No CDN calls)
                 </dd>
               </div>
               <div className="py-3 flex items-center justify-between gap-4">
-                <dt className="text-slate-500 dark:text-slate-400">Tracking & Analytics</dt>
-                <dd className="font-mono text-xs text-emerald-600 dark:text-emerald-400">None</dd>
+                <dt className="text-neutral-500 dark:text-neutral-400">Tracking & Analytics</dt>
+                <dd className="font-mono text-xs text-neutral-950 dark:text-white">None</dd>
               </div>
             </dl>
           </div>
 
-          <div className="pt-4 border-t border-slate-200/70 dark:divide-white/[0.06] dark:border-white/[0.06]">
+          <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900 dark:text-white">
-                  <Cloud className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-950 dark:text-white">
+                  <Cloud className="w-3.5 h-3.5" />
                   <span>{isCloudSynced ? 'Cloud Sync Active' : 'Local-Only Mode'}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">
+                <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400 truncate">
                   {isCloudSynced
                     ? `${userName ?? 'Signed in'}${userEmail ? ` · ${userEmail}` : ''}`
                     : 'Sign in with Google to back up birthdays & chat history to Firestore.'}
@@ -285,7 +285,7 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
                 <button
                   type="button"
                   onClick={onSignOut}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[38px] rounded-xl border border-slate-200 dark:border-white/[0.08] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.08] whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg border border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-900 whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Sign out
@@ -294,7 +294,7 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
                 <button
                   type="button"
                   onClick={onSignIn}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[38px] rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-950 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   Sign in
@@ -303,13 +303,13 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
             </div>
 
             {onOpenGoogleSheets && (
-              <div className="mt-4 pt-4 border-t border-slate-200/70 dark:border-white/[0.06] flex items-center justify-between gap-3">
+              <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-900 dark:text-white">
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-950 dark:text-white">
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
                     <span>Google Sheets Sync</span>
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 truncate">
+                  <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400 truncate">
                     Browse spreadsheets, import rows, or export to a sheet tab.
                   </p>
                 </div>
@@ -317,7 +317,7 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
                 <button
                   type="button"
                   onClick={onOpenGoogleSheets}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[38px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] hover:bg-slate-100 dark:hover:bg-white/[0.1] text-xs font-medium text-slate-900 dark:text-white whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-950 dark:text-white whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   Open Sheets
                 </button>
@@ -328,48 +328,48 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
 
         {/* Backup, Calendar Export & Erase */}
         <div className="lg:col-span-7 space-y-5">
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-6">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
+            <h3 className="text-base font-semibold text-neutral-950 dark:text-white">
               Portable CSV & JSON Backups
             </h3>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">
               Export or import your birthday vault as CSV or JSON independently of cloud sync, or generate a standard iCalendar file for native OS reminders.
             </p>
 
-            <div className="mt-5 flex flex-wrap items-center gap-3">
+            <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <button
                 type="button"
                 onClick={handleExportJson}
-                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-950 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-3.5 h-3.5" />
                 Export JSON
               </button>
 
               <button
                 type="button"
                 onClick={handleExportCsv}
-                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] hover:bg-slate-100 dark:hover:bg-white/[0.1] text-xs font-medium text-slate-900 dark:text-white transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-950 dark:text-white transition-colors whitespace-nowrap cursor-pointer"
               >
-                <FileSpreadsheet className="w-4 h-4 text-[#1D8FE1] dark:text-[#38BDF8]" />
+                <FileSpreadsheet className="w-3.5 h-3.5" />
                 Export CSV
               </button>
 
               <button
                 type="button"
                 onClick={handleExportICS}
-                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] hover:bg-slate-100 dark:hover:bg-white/[0.1] text-xs font-medium text-slate-900 dark:text-white transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-950 dark:text-white transition-colors whitespace-nowrap cursor-pointer"
               >
-                <CalendarPlus className="w-4 h-4 text-[#1D8FE1] dark:text-[#38BDF8]" />
+                <CalendarPlus className="w-3.5 h-3.5" />
                 Export .ics
               </button>
 
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.05] hover:bg-slate-100 dark:hover:bg-white/[0.1] text-xs font-medium text-slate-900 dark:text-white transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-950 dark:text-white transition-colors whitespace-nowrap cursor-pointer"
               >
-                <Upload className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                <Upload className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
                 Import CSV / JSON
               </button>
 
@@ -377,16 +377,16 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
                 type="button"
                 onClick={() => setShowPreview((prev) => !prev)}
                 aria-expanded={showPreview}
-                className="inline-flex items-center gap-2 px-3.5 py-2.5 min-h-[42px] rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.08] hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 py-2 min-h-[38px] rounded-lg text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-950 dark:hover:text-white transition-colors whitespace-nowrap cursor-pointer"
               >
                 {showPreview ? (
                   <>
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="w-3.5 h-3.5" />
                     Hide Preview
                   </>
                 ) : (
                   <>
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-3.5 h-3.5" />
                     Inspect Data
                   </>
                 )}
@@ -403,16 +403,16 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
             </div>
 
             {showPreview && (
-              <div className="mt-5 pt-4 border-t border-slate-200 dark:border-white/[0.06]">
+              <div className="mt-5 pt-4 border-t border-neutral-200 dark:border-neutral-800">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
                       Local Snapshot
                     </span>
                     <div
                       role="tablist"
                       aria-label="Preview format"
-                      className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-slate-200/70 dark:bg-white/[0.05] border border-slate-200 dark:border-white/[0.07]"
+                      className="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
                     >
                       <button
                         type="button"
@@ -421,8 +421,8 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
                         onClick={() => setPreviewFormat('json')}
                         className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
                           previewFormat === 'json'
-                            ? 'bg-[#1D8FE1] text-white'
-                            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                            ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950'
+                            : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                         }`}
                       >
                         JSON
@@ -434,8 +434,8 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
                         onClick={() => setPreviewFormat('csv')}
                         className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
                           previewFormat === 'csv'
-                            ? 'bg-[#1D8FE1] text-white'
-                            : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                            ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950'
+                            : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-950 dark:hover:text-white'
                         }`}
                       >
                         CSV
@@ -445,7 +445,7 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
                   <button
                     type="button"
                     onClick={handleCopyPreview}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-medium text-[#1D8FE1] dark:text-[#38BDF8] hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[32px] rounded-md text-xs font-medium text-neutral-950 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
                   >
                     {copiedPreview ? (
                       <>
@@ -460,14 +460,14 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
                     )}
                   </button>
                 </div>
-                <pre className="p-3.5 rounded-xl bg-slate-100 dark:bg-[#111822] text-[11px] font-mono leading-relaxed text-slate-700 dark:text-slate-300 max-h-56 overflow-auto select-all">
+                <pre className="p-3.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-[11px] font-mono leading-relaxed text-neutral-700 dark:text-neutral-300 max-h-56 overflow-auto select-all">
                   {activePreviewContent}
                 </pre>
               </div>
             )}
 
             {statusMessage && (
-              <p className="mt-4 text-xs text-emerald-600 dark:text-emerald-400">
+              <p className="mt-4 text-xs text-neutral-900 dark:text-neutral-100">
                 {statusMessage}
               </p>
             )}
@@ -476,13 +476,13 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
             )}
           </div>
 
-          <div className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-6">
+          <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+                <h3 className="text-base font-semibold text-neutral-950 dark:text-white">
                   Erase Local Vault
                 </h3>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                   Permanently remove all birthdays and alert logs stored in this browser.
                 </p>
               </div>
@@ -496,14 +496,14 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
                       setConfirmClear(false);
                       setStatusMessage('All local data erased.');
                     }}
-                    className="px-4 py-2 min-h-[40px] rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
+                    className="px-4 py-2 min-h-[38px] rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium transition-colors whitespace-nowrap cursor-pointer"
                   >
                     Yes, Erase Everything
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmClear(false)}
-                    className="px-4 py-2 min-h-[40px] rounded-xl border border-slate-200 dark:border-white/[0.08] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.08] whitespace-nowrap cursor-pointer"
+                    className="px-4 py-2 min-h-[38px] rounded-lg border border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-900 whitespace-nowrap cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -512,7 +512,7 @@ export const PrivacyVaultPanel: React.FC<PrivacyVaultPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => setConfirmClear(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-xl border border-rose-500/30 text-xs font-medium text-rose-500 dark:text-rose-400 hover:bg-rose-500/15 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2 min-h-[38px] rounded-lg border border-rose-500/30 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4" />
                   Erase All Data

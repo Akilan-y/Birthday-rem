@@ -1,10 +1,13 @@
 export type RelationshipGroup = 'Family' | 'Friends' | 'Remembrance';
 
+export type UpcomingFilter = 'All' | 'Within 30 Days' | RelationshipGroup;
+
 export type AdvanceNoticeDays = 0 | 1 | 3 | 7;
 
 export type WorkspaceView =
   | 'calendar'
   | 'upcoming'
+  | 'gallery'
   | 'statistics'
   | 'assistant'
   | 'reminders'
@@ -14,6 +17,16 @@ export type WorkspaceView =
 export type SortMode = 'soonest' | 'alphabetical' | 'month';
 
 export type AssistantPersona = 'eco-gifting' | 'milestone-planner' | 'quick-wishes';
+
+export interface PersonPhotoItem {
+  id: string;
+  driveFileId?: string;
+  name: string;
+  mimeType: string;
+  caption?: string;
+  createdAt: string;
+  localDataUrl?: string;
+}
 
 export interface ChatMessageEntry {
   id: string;
@@ -36,6 +49,13 @@ export interface BirthdayEntry {
   celebratedYears: number[];
   createdAt: string;
   updatedAt: string;
+  phone?: string;
+  email?: string;
+  relation?: string;
+  favoriteThings?: string;
+  avatarFileId?: string | null;
+  avatarThumb?: string | null;
+  galleryPhotos?: PersonPhotoItem[];
 }
 
 export interface ComputedBirthday extends BirthdayEntry {

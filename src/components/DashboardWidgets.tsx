@@ -70,33 +70,33 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
   return (
     <section
       aria-label="Quick overview widgets"
-      className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] overflow-hidden"
+      className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden"
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200/80 dark:divide-white/[0.07]">
+      <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-neutral-200 dark:divide-neutral-800">
         {/* Widget 1: Total birthdays */}
         <button
           type="button"
           onClick={() => onNavigateView('upcoming')}
-          className="group p-4 sm:p-5 text-left transition-colors hover:bg-slate-100/70 dark:hover:bg-white/[0.04] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#38BDF8]"
+          className="group p-4 sm:p-5 text-left transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <Users className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+            <span className="inline-flex items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              <Users className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300" />
               <span>Total birthdays</span>
             </span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1D8FE1] dark:group-hover:text-[#38BDF8] transition-colors" />
+            <ArrowUpRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-950 dark:group-hover:text-white transition-colors" />
           </div>
 
           <div className="mt-2.5 flex items-baseline gap-2.5">
-            <span className="font-mono text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
+            <span className="font-mono text-2xl font-semibold tabular-nums text-neutral-950 dark:text-white">
               {stats.totalCount}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
               {stats.totalCount === 1 ? 'saved entry' : 'saved entries'}
             </span>
           </div>
 
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 truncate tabular-nums">
+          <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400 truncate tabular-nums">
             {stats.totalCount > 0 ? (
               <>
                 {stats.thisMonthCount} this month
@@ -120,36 +120,36 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
               onNavigateView('upcoming');
             }
           }}
-          className="group p-4 sm:p-5 text-left transition-colors hover:bg-slate-100/70 dark:hover:bg-white/[0.04] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#38BDF8]"
+          className="group p-4 sm:p-5 text-left transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <CalendarClock className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+            <span className="inline-flex items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              <CalendarClock className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300" />
               <span>Upcoming this week</span>
             </span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1D8FE1] dark:group-hover:text-[#38BDF8] transition-colors" />
+            <ArrowUpRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-950 dark:group-hover:text-white transition-colors" />
           </div>
 
           <div className="mt-2.5 flex items-baseline gap-2.5">
-            <span className="font-mono text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
+            <span className="font-mono text-2xl font-semibold tabular-nums text-neutral-950 dark:text-white">
               {stats.upcomingThisWeekCount}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
               within 7 days
             </span>
           </div>
 
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 truncate tabular-nums">
+          <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400 truncate tabular-nums">
             {stats.soonestThisWeek ? (
               <>
-                <span className="font-medium text-slate-700 dark:text-slate-200">
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">
                   {stats.soonestThisWeek.name}
                 </span>
                 <span aria-hidden="true"> · </span>
                 <span
                   className={
                     stats.soonestThisWeek.isToday
-                      ? 'text-[#1D8FE1] dark:text-[#38BDF8] font-medium'
+                      ? 'text-neutral-950 dark:text-white font-semibold underline underline-offset-2'
                       : ''
                   }
                 >
@@ -179,33 +179,33 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({
               onAddBirthday();
             }
           }}
-          className="group p-4 sm:p-5 text-left transition-colors hover:bg-slate-100/70 dark:hover:bg-white/[0.04] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#38BDF8]"
+          className="group p-4 sm:p-5 text-left transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <UserPlus className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+            <span className="inline-flex items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              <UserPlus className="w-3.5 h-3.5 text-neutral-700 dark:text-neutral-300" />
               <span>Recently added</span>
             </span>
             {stats.latestAdded ? (
-              <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1D8FE1] dark:group-hover:text-[#38BDF8] transition-colors" />
+              <ArrowUpRight className="w-3.5 h-3.5 text-neutral-400 group-hover:text-neutral-950 dark:group-hover:text-white transition-colors" />
             ) : (
-              <Plus className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+              <Plus className="w-3.5 h-3.5 text-neutral-950 dark:text-white" />
             )}
           </div>
 
           <div className="mt-2.5 flex items-baseline gap-2.5">
-            <span className="font-mono text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
+            <span className="font-mono text-2xl font-semibold tabular-nums text-neutral-950 dark:text-white">
               {stats.recentAdditionsCount}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
               in the last 7 days
             </span>
           </div>
 
-          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 truncate tabular-nums">
+          <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400 truncate tabular-nums">
             {stats.latestAdded ? (
               <>
-                <span className="font-medium text-slate-700 dark:text-slate-200">
+                <span className="font-medium text-neutral-900 dark:text-neutral-100">
                   {stats.latestAdded.name}
                 </span>
                 <span aria-hidden="true"> · </span>

@@ -347,6 +347,24 @@ export function parseImportedBackup(rawJson: string): {
       celebratedYears: Array.isArray(item.celebratedYears)
         ? item.celebratedYears.filter((y): y is number => typeof y === 'number')
         : [],
+      phone: typeof item.phone === 'string' ? item.phone.trim().slice(0, 40) : undefined,
+      email: typeof item.email === 'string' ? item.email.trim().slice(0, 160) : undefined,
+      relation: typeof item.relation === 'string' ? item.relation.trim().slice(0, 60) : undefined,
+      favoriteThings:
+        typeof item.favoriteThings === 'string'
+          ? item.favoriteThings.trim().slice(0, 280)
+          : undefined,
+      avatarFileId: typeof item.avatarFileId === 'string' ? item.avatarFileId : null,
+      avatarThumb: typeof item.avatarThumb === 'string' ? item.avatarThumb : null,
+      galleryPhotos: Array.isArray(item.galleryPhotos)
+        ? item.galleryPhotos.filter(
+            (p) =>
+              p &&
+              typeof p === 'object' &&
+              typeof p.id === 'string' &&
+              typeof p.name === 'string'
+          )
+        : undefined,
       createdAt: typeof item.createdAt === 'string' ? item.createdAt : nowIso,
       updatedAt: nowIso,
     }));

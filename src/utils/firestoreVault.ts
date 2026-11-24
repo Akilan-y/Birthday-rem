@@ -22,6 +22,7 @@ import type {
   BirthdayEntry,
   ChatMessageEntry,
   NotificationSettings,
+  PersonPhotoItem,
   RelationshipGroup,
 } from '../types/birthday';
 
@@ -52,6 +53,55 @@ function toIsoString(value: unknown): string {
   return new Date().toISOString();
 }
 
+function sanitizeGalleryPhotos(raw: unknown): Array<{
+  id: string;
+  driveFileId: string | null;
+  name: string;
+  mimeType: string;
+  caption: string | null;
+  createdAt: string;
+}> {
+  if (!Array.isArray(raw)) return [];
+  const result: Array<{
+    id: string;
+    driveFileId: string | null;
+    name: string;
+    mimeType: string;
+    caption: string | null;
+    createdAt: string;
+  }> = [];
+
+  for (const item of raw.slice(0, 50)) {
+    if (!item || typeof item !== 'object') continue;
+    const obj = item as Partial<PersonPhotoItem>;
+    const id = typeof obj.id === 'string' && obj.id.trim() ? obj.id.trim().slice(0, 128) : '';
+    const name = typeof obj.name === 'string' && obj.name.trim() ? obj.name.trim().slice(0, 160) : '';
+    const mimeType =
+      typeof obj.mimeType === 'string' && obj.mimeType.trim()
+        ? obj.mimeType.trim().slice(0, 80)
+        : 'image/jpeg';
+    if (!id || !name) continue;
+    result.push({
+      id,
+      driveFileId:
+        typeof obj.driveFileId === 'string' && obj.driveFileId.trim()
+          ? obj.driveFileId.trim().slice(0, 128)
+          : null,
+      name,
+      mimeType,
+      caption:
+        typeof obj.caption === 'string' && obj.caption.trim()
+          ? obj.caption.trim().slice(0, 200)
+          : null,
+      createdAt:
+        typeof obj.createdAt === 'string' && obj.createdAt.trim()
+          ? obj.createdAt.trim().slice(0, 40)
+          : new Date().toISOString(),
+    });
+  }
+  return result;
+}
+
 function sanitizeBirthdayPayload(uid: string, entry: BirthdayEntry) {
   const id = sanitizeId(entry.id);
   const safeName = entry.name.trim().slice(0, 80) || 'Birthday';
@@ -76,6 +126,20 @@ function sanitizeBirthdayPayload(uid: string, entry: BirthdayEntry) {
         .slice(0, 100)
     : [];
 
+  const safePhone = (entry.phone ?? '').trim().slice(0, 40) || null;
+  const safeEmail = (entry.email ?? '').trim().slice(0, 160) || null;
+  const safeRelation = (entry.relation ?? '').trim().slice(0, 60) || null;
+  const safeFavorites = (entry.favoriteThings ?? '').trim().slice(0, 280) || null;
+  const safeAvatarFileId =
+    typeof entry.avatarFileId === 'string' && entry.avatarFileId.trim()
+      ? entry.avatarFileId.trim().slice(0, 128)
+      : null;
+  const safeAvatarThumb =
+    typeof entry.avatarThumb === 'string' && entry.avatarThumb.length <= 45000
+      ? entry.avatarThumb
+      : null;
+  const safeGalleryPhotos = sanitizeGalleryPhotos(entry.galleryPhotos);
+
   return {
     id,
     ownerId: uid,
@@ -87,6 +151,13 @@ function sanitizeBirthdayPayload(uid: string, entry: BirthdayEntry) {
     note: safeNote,
     advanceDays: safeAdvance,
     celebratedYears: safeYears,
+    phone: safePhone,
+    email: safeEmail,
+    relation: safeRelation,
+    favoriteThings: safeFavorites,
+    avatarFileId: safeAvatarFileId,
+    avatarThumb: safeAvatarThumb,
+    galleryPhotos: safeGalleryPhotos,
   };
 }
 
@@ -197,6 +268,18 @@ export function subscribeToBirthdaysInFirestore(
     (snapshot) => {
       const entries: BirthdayEntry[] = snapshot.docs.map((docSnap) => {
         const d = docSnap.data();
+        const rawPhotos = Array.isArray(d.galleryPhotos) ? d.galleryPhotos : [];
+        const galleryPhotos: PersonPhotoItem[] = rawPhotos
+          .filter((p): p is Record<string, unknown> => typeof p === 'object' && p !== null)
+          .map((p) => ({
+            id: typeof p.id === 'string' ? p.id : crypto.randomUUID(),
+            driveFileId: typeof p.driveFileId === 'string' ? p.driveFileId : undefined,
+            name: typeof p.name === 'string' ? p.name : 'Photo',
+            mimeType: typeof p.mimeType === 'string' ? p.mimeType : 'image/jpeg',
+            caption: typeof p.caption === 'string' ? p.caption : undefined,
+            createdAt: typeof p.createdAt === 'string' ? p.createdAt : toIsoString(d.createdAt),
+          }));
+
         return {
           id: typeof d.id === 'string' ? d.id : docSnap.id,
           name: typeof d.name === 'string' ? d.name : 'Unnamed',
@@ -209,6 +292,13 @@ export function subscribeToBirthdaysInFirestore(
           celebratedYears: Array.isArray(d.celebratedYears)
             ? d.celebratedYears.filter((y): y is number => typeof y === 'number')
             : [],
+          phone: typeof d.phone === 'string' ? d.phone : undefined,
+          email: typeof d.email === 'string' ? d.email : undefined,
+          relation: typeof d.relation === 'string' ? d.relation : undefined,
+          favoriteThings: typeof d.favoriteThings === 'string' ? d.favoriteThings : undefined,
+          avatarFileId: typeof d.avatarFileId === 'string' ? d.avatarFileId : null,
+          avatarThumb: typeof d.avatarThumb === 'string' ? d.avatarThumb : null,
+          galleryPhotos,
           createdAt: toIsoString(d.createdAt),
           updatedAt: toIsoString(d.updatedAt),
         };
@@ -262,6 +352,13 @@ export async function updateBirthdayInFirestore(
       note: payload.note,
       advanceDays: payload.advanceDays,
       celebratedYears: payload.celebratedYears,
+      phone: payload.phone,
+      email: payload.email,
+      relation: payload.relation,
+      favoriteThings: payload.favoriteThings,
+      avatarFileId: payload.avatarFileId,
+      avatarThumb: payload.avatarThumb,
+      galleryPhotos: payload.galleryPhotos,
       updatedAt: serverTimestamp(),
     });
   } catch (error) {

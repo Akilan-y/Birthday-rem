@@ -15,6 +15,7 @@ interface SpotlightHeroProps {
   vaultBytes: number;
   onToggleCelebrated: (entry: ComputedBirthday) => void;
   onOpenAddModal: () => void;
+  onOpenProfile?: (entry: ComputedBirthday) => void;
 }
 
 export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
@@ -22,6 +23,7 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
   vaultBytes,
   onToggleCelebrated,
   onOpenAddModal,
+  onOpenProfile,
 }) => {
   const nextBirthday = birthdays[0] ?? null;
   const isNextRemembrance = nextBirthday?.group === 'Remembrance';
@@ -46,27 +48,20 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
       ? 1
       : Math.max(0.02, cycleStats.progressRatio)
     : 0;
-  const barGradientClass = nextBirthday?.isToday
-    ? 'from-[#1D8FE1] to-emerald-400'
-    : isNextRemembrance
-    ? 'from-violet-500/80 to-[#A78BFA]'
-    : nextBirthday && nextBirthday.daysUntil <= 7
-    ? 'from-[#1D8FE1] to-amber-400'
-    : 'from-[#1D8FE1]/85 to-[#38BDF8]';
 
   return (
-    <section className="rounded-2xl border border-slate-200 dark:border-white/[0.07] bg-white/75 dark:bg-white/[0.03] p-6">
+    <section className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div className="max-w-2xl">
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 flex flex-wrap items-center gap-x-2 gap-y-1">
-            <Leaf className="w-3.5 h-3.5 text-[#1D8FE1] dark:text-[#38BDF8]" />
+          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Leaf className="w-3.5 h-3.5 text-neutral-950 dark:text-white" />
             <span>{formatTodayHeader()}</span>
             <span aria-hidden="true">·</span>
             <span>Local-only keepsake</span>
             {nextBirthday && isNextMilestone && nextBirthday.turningAge !== null && (
               <>
                 <span aria-hidden="true">·</span>
-                <span className="inline-flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-300">
+                <span className="inline-flex items-center gap-1.5 font-semibold text-neutral-950 dark:text-white">
                   <Award className="w-3.5 h-3.5" />
                   <span>
                     Milestone · {formatOrdinalAge(nextBirthday.turningAge)} Birthday
@@ -78,7 +73,7 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
 
           {nextBirthday ? (
             <div className="mt-3">
-              <h2 className="font-display text-2xl sm:text-3xl font-medium tracking-tight text-slate-900 dark:text-white [text-wrap:balance]">
+              <h2 className="font-display text-2xl sm:text-3xl font-medium tracking-tight text-neutral-950 dark:text-white [text-wrap:balance]">
                 {nextBirthday.isToday
                   ? isNextRemembrance
                     ? `Remembering ${nextBirthday.name} today.`
@@ -91,7 +86,7 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
                   ? `${nextBirthday.name}'s ${formatOrdinalAge(nextBirthday.turningAge)} milestone is ${formatCountdownLabel(nextBirthday.daysUntil).toLowerCase()}.`
                   : `${nextBirthday.name} is next, ${formatCountdownLabel(nextBirthday.daysUntil).toLowerCase()}.`}
               </h2>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
                 {formatShortDate(nextBirthday.month, nextBirthday.day)}
                 {nextBirthday.turningAge !== null && (
                   <>
@@ -99,7 +94,7 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
                     <span
                       className={`tabular-nums ${
                         isNextMilestone
-                          ? 'font-medium text-amber-600 dark:text-amber-300'
+                          ? 'font-medium text-neutral-950 dark:text-white'
                           : ''
                       }`}
                     >
@@ -122,10 +117,10 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
             </div>
           ) : (
             <div className="mt-3">
-              <h2 className="font-display text-2xl sm:text-3xl font-medium tracking-tight text-slate-900 dark:text-white [text-wrap:balance]">
+              <h2 className="font-display text-2xl sm:text-3xl font-medium tracking-tight text-neutral-950 dark:text-white [text-wrap:balance]">
                 A quiet place to remember the people who matter.
               </h2>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
                 Every birthday stays on your device with offline reminders and zero data collection.
               </p>
             </div>
@@ -133,14 +128,23 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
         </div>
 
         {nextBirthday ? (
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {onOpenProfile && (
+              <button
+                type="button"
+                onClick={() => onOpenProfile(nextBirthday)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-950 dark:text-white text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
+              >
+                Open Page
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onToggleCelebrated(nextBirthday)}
-              className={`inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#38BDF8] ${
+              className={`inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-lg text-sm font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 dark:focus-visible:ring-white ${
                 nextBirthday.isCelebratedThisYear
-                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
-                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-900 dark:text-white border border-slate-200 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-white/[0.12]'
+                  ? 'border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-neutral-950'
+                  : 'bg-neutral-50 dark:bg-neutral-900 text-neutral-950 dark:text-white border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800'
               }`}
             >
               <Check className="w-4 h-4" />
@@ -158,7 +162,7 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
             <button
               type="button"
               onClick={onOpenAddModal}
-              className="inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl bg-[#1D8FE1] hover:bg-[#197CC6] text-white text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 min-h-[42px] rounded-lg bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-200 dark:text-neutral-950 text-sm font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               Add First Birthday
             </button>
@@ -168,20 +172,10 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
 
       {/* Countdown Visualizer */}
       {nextBirthday && cycleStats && (
-        <div className="mt-5 pt-4 border-t border-slate-200 dark:border-white/[0.06]">
+        <div className="mt-5 pt-4 border-t border-neutral-200 dark:border-neutral-800">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="inline-flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-200">
-              <Clock
-                className={`w-3.5 h-3.5 ${
-                  isNextRemembrance
-                    ? 'text-violet-500 dark:text-violet-300'
-                    : nextBirthday.isToday
-                    ? 'text-emerald-500 dark:text-emerald-300'
-                    : nextBirthday.daysUntil <= 7
-                    ? 'text-amber-500 dark:text-amber-300'
-                    : 'text-[#1D8FE1] dark:text-[#38BDF8]'
-                }`}
-              />
+            <span className="inline-flex items-center gap-1.5 font-medium text-neutral-800 dark:text-neutral-200">
+              <Clock className="w-3.5 h-3.5 text-neutral-950 dark:text-white" />
               <span>
                 {nextBirthday.isToday
                   ? isNextRemembrance
@@ -191,21 +185,21 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
               </span>
             </span>
 
-            <span className="font-mono tabular-nums text-slate-600 dark:text-slate-300">
+            <span className="font-mono tabular-nums text-neutral-600 dark:text-neutral-400">
               {nextBirthday.isToday ? (
-                <span className="font-semibold text-emerald-600 dark:text-emerald-300">
+                <span className="font-semibold text-neutral-950 dark:text-white">
                   0 days left · 100%
                 </span>
               ) : (
                 <>
-                  <span className="font-semibold text-slate-900 dark:text-white">
+                  <span className="font-semibold text-neutral-950 dark:text-white">
                     {cycleStats.remainingDays}{' '}
                     {cycleStats.remainingDays === 1 ? 'day' : 'days'} left
                   </span>
-                  <span aria-hidden="true" className="mx-1.5 text-slate-400">
+                  <span aria-hidden="true" className="mx-1.5 text-neutral-400">
                     ·
                   </span>
-                  <span className="text-slate-500 dark:text-slate-400">
+                  <span className="text-neutral-500 dark:text-neutral-400">
                     {cycleStats.elapsedDays}/{cycleStats.totalDays}d ({cycleStats.percentComplete}%)
                   </span>
                 </>
@@ -224,31 +218,31 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
                 ? 'Today'
                 : `${cycleStats.remainingDays} days remaining, ${cycleStats.percentComplete} percent of year elapsed`
             }
-            className="mt-2.5 relative h-2.5 w-full rounded-full bg-slate-200/80 dark:bg-white/[0.08] overflow-hidden"
+            className="mt-2.5 relative h-2 w-full rounded-sm bg-neutral-200 dark:bg-neutral-800 overflow-hidden"
           >
             <div
-              className={`h-full w-full origin-left rounded-full bg-gradient-to-r ${barGradientClass} transition-transform duration-300 ease-out motion-reduce:transition-none`}
+              className="h-full w-full origin-left bg-neutral-950 dark:bg-white transition-transform duration-300 ease-out motion-reduce:transition-none"
               style={{transform: `scaleX(${visualBarScale})`}}
             />
             <span
               aria-hidden="true"
-              className="absolute inset-y-0 left-1/4 w-px bg-white/40 dark:bg-white/10 pointer-events-none"
+              className="absolute inset-y-0 left-1/4 w-px bg-white/60 dark:bg-black/40 pointer-events-none"
             />
             <span
               aria-hidden="true"
-              className="absolute inset-y-0 left-1/2 w-px bg-white/40 dark:bg-white/10 pointer-events-none"
+              className="absolute inset-y-0 left-1/2 w-px bg-white/60 dark:bg-black/40 pointer-events-none"
             />
             <span
               aria-hidden="true"
-              className="absolute inset-y-0 left-3/4 w-px bg-white/40 dark:bg-white/10 pointer-events-none"
+              className="absolute inset-y-0 left-3/4 w-px bg-white/60 dark:bg-black/40 pointer-events-none"
             />
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono tabular-nums text-slate-500 dark:text-slate-400">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono tabular-nums text-neutral-500 dark:text-neutral-400">
             <span>
               {formatShortDate(nextBirthday.month, nextBirthday.day)}, {cycleStats.previousYear}
             </span>
-            <span className="font-sans text-slate-500 dark:text-slate-400">
+            <span className="font-sans text-neutral-500 dark:text-neutral-400">
               {nextBirthday.advanceDays === 0
                 ? 'Reminder on the day'
                 : `Reminder ${nextBirthday.advanceDays}d prior`}
@@ -263,55 +257,55 @@ export const SpotlightHero: React.FC<SpotlightHeroProps> = ({
 
       {/* Upcoming Milestone Radar Strip */}
       {nextSecondaryMilestone && nextSecondaryMilestone.turningAge !== null && (
-        <div className="mt-5 pt-4 border-t border-slate-200 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-          <div className="flex flex-wrap items-center gap-2 text-slate-600 dark:text-slate-300">
-            <Award className="w-4 h-4 text-amber-500 dark:text-amber-300 shrink-0" />
-            <span className="font-medium text-amber-600 dark:text-amber-300">
+        <div className="mt-5 pt-4 border-t border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-neutral-600 dark:text-neutral-300">
+            <Award className="w-4 h-4 text-neutral-950 dark:text-white shrink-0" />
+            <span className="font-medium text-neutral-950 dark:text-white">
               Upcoming Milestone
             </span>
             <span aria-hidden="true">·</span>
-            <span className="font-medium text-slate-900 dark:text-white">
+            <span className="font-medium text-neutral-950 dark:text-white">
               {nextSecondaryMilestone.name}
             </span>
             <span>
               turns{' '}
-              <span className="font-mono tabular-nums font-medium text-slate-900 dark:text-white">
+              <span className="font-mono tabular-nums font-medium text-neutral-950 dark:text-white">
                 {nextSecondaryMilestone.turningAge}
               </span>{' '}
               on {formatShortDate(nextSecondaryMilestone.month, nextSecondaryMilestone.day)}
             </span>
           </div>
-          <span className="font-mono tabular-nums text-amber-600 dark:text-amber-300 shrink-0">
+          <span className="font-mono tabular-nums font-medium text-neutral-950 dark:text-white shrink-0">
             {formatCountdownLabel(nextSecondaryMilestone.daysUntil)}
           </span>
         </div>
       )}
 
       {/* 4-column unboxed tabular metric strip */}
-      <dl className="mt-5 pt-5 border-t border-slate-200 dark:border-white/[0.06] grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <dl className="mt-5 pt-5 border-t border-neutral-200 dark:border-neutral-800 grid grid-cols-2 lg:grid-cols-4 gap-6">
         <div>
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Saved Birthdays</dt>
-          <dd className="mt-1 font-mono text-xl font-medium tabular-nums text-slate-900 dark:text-white">
+          <dt className="text-xs text-neutral-500 dark:text-neutral-400">Saved Birthdays</dt>
+          <dd className="mt-1 font-mono text-xl font-medium tabular-nums text-neutral-950 dark:text-white">
             {totalCount}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-500 dark:text-slate-400">This Month</dt>
-          <dd className="mt-1 font-mono text-xl font-medium tabular-nums text-slate-900 dark:text-white">
+          <dt className="text-xs text-neutral-500 dark:text-neutral-400">This Month</dt>
+          <dd className="mt-1 font-mono text-xl font-medium tabular-nums text-neutral-950 dark:text-white">
             {thisMonthCount}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Next 30 Days</dt>
-          <dd className="mt-1 font-mono text-xl font-medium tabular-nums text-slate-900 dark:text-white">
+          <dt className="text-xs text-neutral-500 dark:text-neutral-400">Next 30 Days</dt>
+          <dd className="mt-1 font-mono text-xl font-medium tabular-nums text-neutral-950 dark:text-white">
             {next30DaysCount}
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-500 dark:text-slate-400">Upcoming Milestones</dt>
-          <dd className="mt-1 font-mono text-xl font-medium tabular-nums text-slate-900 dark:text-white">
+          <dt className="text-xs text-neutral-500 dark:text-neutral-400">Upcoming Milestones</dt>
+          <dd className="mt-1 font-mono text-xl font-medium tabular-nums text-neutral-950 dark:text-white">
             {upcomingMilestones.length}
-            <span className="ml-2 font-sans text-xs font-normal text-slate-500 dark:text-slate-400">
+            <span className="ml-2 font-sans text-xs font-normal text-neutral-500 dark:text-neutral-400">
               ({formattedSize})
             </span>
           </dd>

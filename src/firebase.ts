@@ -7,6 +7,7 @@ import {
 } from 'firebase/auth';
 import {doc, getDocFromServer, getFirestore} from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
+import {clearDriveMediaCache} from './utils/googleDriveMedia';
 
 const app = initializeApp(firebaseConfig);
 
@@ -24,6 +25,9 @@ const databaseId =
 
 export const db = getFirestore(app, databaseId);
 export const auth = getAuth(app);
+export const basicGoogleProvider = new GoogleAuthProvider();
+basicGoogleProvider.setCustomParameters({prompt: 'select_account'});
+
 export const googleProvider = new GoogleAuthProvider();
 WORKSPACE_SCOPES.forEach((scope) => {
   googleProvider.addScope(scope);
@@ -39,6 +43,26 @@ export function getCachedAccessToken(): string | null {
 
 export function clearCachedAccessToken(): void {
   cachedAccessToken = null;
+  clearDriveMediaCache();
+}
+
+export function formatGoogleAuthError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error ?? '');
+  const lower = raw.toLowerCase();
+  if (lower.includes('policy_enforced') || lower.includes('advanced protection')) {
+    return 'Google blocked access because this account has Advanced Protection enabled (Error 400: policy_enforced). Use a Google account without Advanced Protection for Drive/Sheets sync, or continue using local vault storage for profiles and gallery photos.';
+  }
+  if (lower.includes('popup-closed-by-user')) {
+    return 'Google sign-in popup was closed before completing.';
+  }
+  if (lower.includes('popup-blocked')) {
+    return 'Sign-in popup was blocked by your browser. Please allow popups for this site and try again.';
+  }
+  return raw || 'Google sign-in was cancelled or failed.';
+}
+
+export async function signInBasicWithGoogle(): Promise<void> {
+  await signInWithPopup(auth, basicGoogleProvider);
 }
 
 export async function signInWithGoogle(): Promise<string | null> {
@@ -50,6 +74,7 @@ export async function signInWithGoogle(): Promise<string | null> {
 
 export async function signOutUser(): Promise<void> {
   cachedAccessToken = null;
+  clearDriveMediaCache();
   await signOut(auth);
 }
 
